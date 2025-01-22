@@ -1,0 +1,54 @@
+
+/* พื้นฐานสำหรับหน้า Employee */
+.emp_login-container {
+  background-color: #FFF5D1; /* สีเหลืองอ่อน */
+  background-size: 30% 30%; /* กำหนดขนาดของ background-image ให้เล็กลง */
+  background-image: url("./assets/3.png"), url("./assets/4.png");
+  background-position: left bottom, right bottom; /* ชิดซ้ายสำหรับ 3.png และ ชิดขวาสำหรับ 4.png */
+  background-repeat: no-repeat; /* ไม่ให้ภาพซ้ำ */
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-position 0.1s ease-out;
+}
+
+
+/* การ์ดเฉพาะของ Employee */
+.emp-card {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8); /* เงา */
+  background-color: #ffffff; /* สีพื้นหลัง */
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* ช่อง Input และปุ่มสำหรับ Employee */
+.emp-card .input {
+  transition: all 0.3s ease;
+}
+
+.emp-card .input:focus {
+  outline: none;
+  border-color: #fdc600; /* สีฟ้า */
+  box-shadow: 0 0 8px #fdc600;
+}
+
+.emp-card .btn {
+  background-color: #fdc600;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.emp-card .btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 10px rgba(255, 247, 10, 0.5); /* เงาสีฟ้า */
+}
+
+.emp-card .input {
+  color: #000000; /* ตั้งสีข้อความให้เป็นสีขาว */
+  background-color: #f9fbff; /* สีพื้นหลังของช่องกรอกข้อมูล */
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ffbb00; /* เส้นขอบ */
+  transition: all 0.3s ease;
+}

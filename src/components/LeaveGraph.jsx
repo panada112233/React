@@ -1,0 +1,428 @@
+import React, { useState, useEffect } from "react";
+import { Bar } from "react-chartjs-2";
+import { Link, NavLink } from "react-router-dom";
+import axios from "axios";
+import DIcon from '../assets/12.png';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const LeaveGraph = () => {
+  const [fileData, setFileData] = useState([]);
+  const [employeeNames, setEmployeeNames] = useState([]);
+  const [fileCounts, setFileCounts] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [profilePic, setProfilePic] = useState(""); // รูปโปรไฟล์
+  const [adminName, setAdminName] = useState(""); // ชื่อจริงของแอดมิน
+  const [selectedFile, setSelectedFile] = useState(null); // ไฟล์ที่เลือก
+  const [isEditingName, setIsEditingName] = useState(false); // เพิ่มตัวแปร isEditingName
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [categoryCounts, setCategoryCounts] = useState({});
+
+  const categoryMapping = {
+    Identification: 'ลาพักร้อน',
+    WorkContract: 'ลากิจ',
+    Certificate: 'ลาป่วย',
+  };
+
+  useEffect(() => {
+    const fetchFileData = async () => {
+      try {
+        const filesResponse = await axios.get("https://localhost:7039/api/Files");
+        const usersResponse = await axios.get("https://localhost:7039/api/Users");
+
+        const userMapping = usersResponse.data.reduce((acc, user) => {
+          acc[user.userID] = `${user.firstName} ${user.lastName}`;
+          return acc;
+        }, {});
+
+        const fileCountMapping = usersResponse.data.reduce((acc, user) => {
+          acc[`${user.firstName} ${user.lastName}`] = 0;
+          return acc;
+        }, {});
+
+        const categoryCountMapping = Object.keys(categoryMapping).reduce((acc, key) => {
+          acc[categoryMapping[key]] = 0; // ตั้งค่าทุกประเภทเอกสารเริ่มต้นเป็น 0
+          return acc;
+        }, {});
+
+        filesResponse.data
+          .filter((file) => file.category !== "Others")
+          .forEach((file) => {
+            const fileDate = new Date(file.uploadDate);
+            if (
+              fileDate.getMonth() === selectedMonth &&
+              fileDate.getFullYear() === selectedYear
+            ) {
+              const userName = userMapping[file.userID] || "Unknown";
+              fileCountMapping[userName] = (fileCountMapping[userName] || 0) + 1;
+
+              const thaiCategory = categoryMapping[file.category];
+              if (thaiCategory) {
+                categoryCountMapping[thaiCategory] =
+                  (categoryCountMapping[thaiCategory] || 0) + 1;
+              }
+            }
+          });
+
+        setEmployeeNames(Object.keys(fileCountMapping));
+        setFileCounts(Object.values(fileCountMapping));
+        setCategoryCounts(categoryCountMapping);
+      } catch (error) {
+        console.error("Error fetching file data:", error);
+      }
+    };
+
+    fetchFileData();
+  }, [selectedMonth, selectedYear]);
+
+  const createChartData = () => {
+    return {
+      labels: employeeNames,
+      datasets: [
+        {
+          label: `จำนวนการลาพนักงานในเดือน ${selectedMonth + 1} ปี ${selectedYear}`,
+          data: fileCounts,
+          backgroundColor: "#3B82F6",
+        },
+      ],
+    };
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: "top",
+      },
+      tooltip: {
+        callbacks: {
+          label: (tooltipItem) => {
+            return `จำนวนการลา: ${tooltipItem.raw}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          font: {
+            size: 12,
+          },
+        },
+      },
+      y: {
+        ticks: {
+          stepSize: 1,
+          callback: function (value) {
+            return Math.floor(value);
+          },
+        },
+        title: {
+          display: true,
+          text: "จำนวนการลา",
+          font: {
+            size: 14,
+          },
+        },
+      },
+    },
+    layout: {
+      padding: {
+        top: 20,
+        bottom: 20,
+      },
+    },
+    barThickness: 25, // ลดความหนาของแท่งกราฟ
+  };
+
+  useEffect(() => {
+    axios.get('https://localhost:7039/api/Admin/GetAdminInfo')
+      .then(response => {
+        console.log("API Response:", response.data); // ตรวจสอบผลลัพธ์
+        setAdminName(response.data.name || "ไม่มีชื่อแอดมิน"); // ใช้ Name หรือข้อความเริ่มต้น
+        const profileUrls = response.data.profilePictureUrl || [];
+        setProfilePic(profileUrls.length ? `http://localhost/${profileUrls}` : '/uploads/admin/default-profile.jpg');
+      })
+      .catch(error => {
+        console.error('Error fetching admin data:', error);
+        setAdminName("ไม่สามารถดึงข้อมูลได้");
+      });
+  }, []);
+
+  const handleProfilePicChange = (event) => {
+    const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
+    if (file) {
+      setSelectedFile(file); // เก็บไฟล์ที่เลือกลงใน state
+      // อัปเดตข้อความแสดงชื่อไฟล์
+      document.getElementById("fileName").textContent = file.name;
+    } else {
+      // ถ้าไม่ได้เลือกไฟล์ ให้แสดงข้อความเริ่มต้น
+      document.getElementById("fileName").textContent = "ไม่ได้เลือกไฟล์";
+    }
+  };
+
+  const handleNameUpdate = async () => {
+    const formData = new FormData();
+    console.log("Name to update:", adminName); // ล็อกชื่อที่จะอัปเดต
+
+    if (adminName) formData.append("name", adminName);
+
+    try {
+      const response = await axios.post(
+        "https://localhost:7039/api/Admin/UpdateAdminInfo",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      setIsEditingName(false);
+      setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
+    } catch (error) {
+      console.error("Error updating admin name:", error);
+      setUploadMessage(
+        <p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>
+      );
+    }
+  };
+
+  // อัปโหลดรูปโปรไฟล์ใหม่
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setUploadMessage(
+        <p className="font-FontNoto text-red-500">กรุณาเลือกไฟล์ก่อนอัปโหลด</p>
+      );
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("profilePictures", selectedFile); // ส่งเฉพาะรูปภาพ
+
+    try {
+      const response = await axios.post(
+        "https://localhost:7039/api/Admin/UpdateAdminInfo",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      if (response.data && response.data.profilePictureUrl) {
+        const profilePictureUrl = `http://localhost/${response.data.profilePictureUrl}`;
+        setProfilePic(profilePictureUrl);
+        setUploadMessage(
+          <p className="font-FontNoto text-green-500">อัปโหลดสำเร็จ!</p>
+        );
+      } else {
+        setUploadMessage(
+          <p className="font-FontNoto text-red-500">
+            อัปโหลดสำเร็จ แต่ไม่ได้รับ URL ของรูปโปรไฟล์
+          </p>
+        );
+      }
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+
+      const errorMessage =
+        error.response?.data?.Message || "เกิดข้อผิดพลาดในการอัปโหลด";
+      setUploadMessage(
+        <p className="font-FontNoto text-red-500">{errorMessage}</p>
+      );
+    }
+  };
+
+  const months = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+  ];
+
+  const years = Array.from({ length: 11 }, (_, i) => 2024 + i); // ปี 2024 ถึง 2034
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {/* Navbar */}
+      <div className="navbar bg-amber-400 shadow-lg">
+        <div className="flex-1">
+          <div className="text-xl font-bold text-black bg-amber-400 p-4 rounded-md font-FontNoto">
+            ระบบจัดเก็บเอกสารพนักงาน
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex min-h-screen bg-base-200">
+        {/* Sidebar */}
+        <div className="w-1/6 bg-white shadow-lg p-6 rounded-lg">
+          <div className="">
+            <div className="font-FontNoto">
+              {uploadMessage && <div>{uploadMessage}</div>}
+            </div>
+
+            <div className="flex flex-col items-center justify-center">
+              {profilePic && (
+                <img
+                  src={profilePic}
+                  alt="Admin Profile"
+                  className="rounded-full border-4 border-yellow-500 object-cover w-32 h-32"
+                />
+              )}
+              <p className="text-lg text-black font-FontNoto mt-4">
+                {adminName || "กำลังโหลด..."}
+              </p>
+            </div>
+            <div className="mt-4">
+              {!isEditingName ? (
+                <div className="flex items-center">
+
+                  <button
+                    onClick={() => setIsEditingName(true)}
+                    className="ml-2 text-sm text-blue-500 hover:underline font-FontNoto"
+                  >
+                    คลิกเพื่อเปลี่ยนชื่อแอดมิน
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <input
+                    type="text"
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    className="border border-gray-300 rounded-md p-1 bg-white text-black font-FontNoto"
+                  />
+                  <button
+                    onClick={handleNameUpdate}
+                    className="ml-2 text-sm text-green-500 hover:underline font-FontNoto"
+                  >
+                    บันทึก
+                  </button>
+                  <button
+                    onClick={() => setIsEditingName(false)}
+                    className="ml-2 text-sm text-red-500 hover:underline font-FontNoto"
+                  >
+                    ยกเลิก
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-center items-center space-x-2">
+              <div className="flex items-center space-x-1 p-0.25 border border-gray-200 rounded-md w-48">
+                <label
+                  htmlFor="fileInput"
+                  className="cursor-pointer text-xs py-1 px-2 bg-gray-200 text-black rounded-md font-FontNoto"
+                >
+                  เลือกไฟล์
+                </label>
+                <input
+                  id="fileInput"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePicChange}
+                  className="hidden"
+                />
+                <span id="fileName" className="text-xs text-black font-FontNoto py-1 px-2 ">
+                  ไม่ได้เลือกไฟล์
+                </span>
+              </div>
+
+              <button
+                onClick={handleUpload}
+                className="cursor-pointer text-xs py-1 px-2 bg-gray-200 rounded-md font-FontNoto"
+              >
+                อัปโหลด
+              </button>
+            </div>
+          </div>
+
+          <ul className="menu bg-base-100 text-black rounded-box w-full text-lg">
+            <li><Link to="/AdminDashboard" className="hover:bg-green-100 hover:text-black font-FontNoto font-bold">Dashboard</Link></li>
+            <li><NavLink to="/LeaveGraph" className={({ isActive }) => isActive ? "hover:bg-gray-300 hover:text-black font-FontNoto font-bold bg-gray-200" : "hover:bg-yellow-100 hover:text-black font-FontNoto font-bold"}>สถิติการลาพนักงาน</NavLink></li>
+            <li><Link to="/UserList" className="hover:bg-green-100 hover:text-black font-FontNoto font-bold">ข้อมูลพนักงาน</Link></li>
+            <li><Link to="/FileList" className="hover:bg-orange-100 hover:text-black font-FontNoto font-bold">จัดการเอกสาร</Link></li>
+            <li><Link to="/WorkExperienceList" className="hover:bg-yellow-100 hover:text-black font-FontNoto font-bold">ประสบการณ์ทำงาน</Link></li>
+            <li><Link to="/EducationList" className="hover:bg-purple-100 hover:text-black font-FontNoto font-bold">การศึกษา</Link></li>
+            <li><Link to="/AdminLogout" className="hover:bg-error hover:text-white font-FontNoto font-bold">ออกจากระบบ</Link></li>
+          </ul>
+        </div>
+        {/* Content */}
+        <div className="flex-1 p-10 bg-white shadow-lg rounded-lg ml-1">
+          <h2 className="text-2xl font-bold text-black font-FontNoto">สถิติการลาพนักงาน</h2>
+          <div className="flex items-center justify-end space-x-4 mb-4">
+            <label htmlFor="monthSelect" className="font-FontNoto text-black">เลือกเดือน:</label>
+            <select
+              id="monthSelect"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+              className="select select-bordered w-40 text-black font-FontNoto"
+            >
+              {months.map((month, index) => (
+                <option key={index} value={index}>{month}</option>
+              ))}
+            </select>
+
+            <label htmlFor="yearSelect" className="font-FontNoto text-black">เลือกปี:</label>
+            <select
+              id="yearSelect"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="select select-bordered w-40 text-black font-FontNoto"
+            >
+              {years.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+          {/* ข้อมูลประเภทเอกสาร */}
+          <div className="flex flex-wrap justify-center gap-6 mt-6">
+            {Object.keys(categoryCounts).map((category) => (
+              <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-48 flex">
+                <div className="flex flex-col items-center justify-center">
+                  <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
+                  <div className="flex items-center">
+                    <img
+                      src={DIcon}
+                      className="w-8 h-8 mr-2"
+                      alt="icon"
+                    />
+                    <p className="text-3xl font-FontNoto">{categoryCounts[category]}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-center items-center mt-6">
+            <div
+              className="card bg-base-100 shadow-lg p-4 flex-grow"
+              style={{ border: '5px solid white', maxWidth: '60%' }}
+            >
+              <h3 className="text-lg font-bold text-black mb-4 font-FontNoto">
+                สถิติการลาของพนักงาน
+              </h3>
+              <div className="w-full max-w-screen-md">
+                <Bar data={createChartData()} options={chartOptions} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LeaveGraph;

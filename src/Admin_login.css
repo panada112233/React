@@ -1,0 +1,50 @@
+/* พื้นฐานสำหรับหน้า Admin */
+.admin_login-container {
+  background-image: url("./assets/E.gif"); /* พื้นหลังสำหรับแอดมิน */
+  background-size: cover;
+  background-position: center;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-position 0.1s ease-out;
+}
+
+/* การ์ดเฉพาะของ Admin */
+.admin-card {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8); /* เงา */
+  background-color: #1a202c; /* สีพื้นหลัง */
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* ช่อง Input และปุ่มสำหรับ Admin */
+.admin-card .input {
+  transition: all 0.3s ease;
+}
+
+.admin-card .input:focus {
+  outline: none;
+  border-color: #fbbf24; /* สีทอง */
+  box-shadow: 0 0 8px #fbbf24;
+}
+
+.admin-card .btn {
+  background-color: #fbbf24;
+  color: #000;
+  transition: all 0.3s ease;
+}
+
+.admin-card .btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 10px rgba(255, 193, 7, 0.5); /* เงาสีทอง */
+}
+
+.admin-card .input {
+  color: #000000; /* ตั้งสีข้อความให้เป็นสีขาว */
+  background-color: #f9fbff; /* สีพื้นหลังของช่องกรอกข้อมูล */
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc; /* เส้นขอบ */
+  transition: all 0.3s ease;
+}
