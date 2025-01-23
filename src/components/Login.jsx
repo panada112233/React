@@ -33,23 +33,27 @@ const Login = ({ setIsLoggedIn }) => {
             const response = await axios.post(url, data);
     
             if (response.status === 200) {
-                const { token, userid, role } = response.data;
-    
-                if (isEmail && !role) {
+                const  res  = response.data;
+                console.log(response.data.userid)
+                if (res === null) {
                     setError('ไม่พบข้อมูล role ของพนักงาน');
                     return;
                 }
-    
+                const userinfo = JSON.stringify(response.data)
+               
                 setIsLoggedIn(true);
-                sessionStorage.setItem('token', token);
-                sessionStorage.setItem('userId', userid);
+                localStorage.setItem('userinfo', JSON.stringify(response.data));
+              
+                sessionStorage.setItem('userId',response.data.userid );
                 if (isEmail) {
-                    sessionStorage.setItem('role', role); // เก็บ role สำหรับพนักงานเท่านั้น
+                    sessionStorage.setItem('role', response.data.role); // เก็บ role สำหรับพนักงานเท่านั้น
                 }
+
                 sessionStorage.setItem('isAdmin', !isEmail); // บันทึกสถานะแอดมิน
                 navigate(isEmail ? '/EmpHome' : '/AdminDashboard');
             }
         } catch (err) {
+            console.log(err)
             if (err.response && err.response.status === 401) {
                 setError('ชื่อผู้ใช้/อีเมล หรือรหัสผ่านไม่ถูกต้อง');
             } else {

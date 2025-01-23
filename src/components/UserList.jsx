@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { NavLink } from 'react-router-dom';
+import { GetUser } from '../function/apiservice';
+
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
@@ -14,7 +16,7 @@ const UserList = () => {
   const [selectedFile, setSelectedFile] = useState(null); // ไฟล์ที่เลือก
   const [uploadMessage, setUploadMessage] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     axios
@@ -68,18 +70,24 @@ const UserList = () => {
   };
 
   useEffect(() => {
-    axios.get('https://localhost:7039/api/Admin/GetAdminInfo')
-      .then(response => {
-        console.log("API Response:", response.data); // ตรวจสอบผลลัพธ์
-        setAdminName(response.data.name || "ไม่มีชื่อแอดมิน"); // ใช้ Name หรือข้อความเริ่มต้น
-        const profileUrls = response.data.profilePictureUrl || [];
-        setProfilePic(profileUrls.length ? `http://localhost/${profileUrls}` : '/uploads/admin/default-profile.jpg');
-      })
-      .catch(error => {
-        console.error('Error fetching admin data:', error);
+    const fetchAdminInfo = async () => {
+      try {
+        const response = await GetUser(); // ใช้ฟังก์ชันจาก apiservice
+        setAdminName(response.name || "ไม่มีชื่อแอดมิน");
+        setProfilePic(
+          response.profilePictureUrl
+            ? `http://localhost${response.profilePictureUrl}`
+            : "/uploads/admin/default-profile.jpg"
+        );
+      } catch (error) {
+        console.error("Error fetching admin data:", error);
         setAdminName("ไม่สามารถดึงข้อมูลได้");
-      });
+      }
+    };
+  
+    fetchAdminInfo();
   }, []);
+  
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -94,28 +102,38 @@ const UserList = () => {
   };
 
   const handleNameUpdate = async () => {
+    if (!adminName) {
+      console.error("Admin name is empty, cannot update.");
+      setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
+      return;
+    }
+  
+    // ดึงข้อมูล User ID จาก localStorage
+    const userInfo = JSON.parse(localStorage.getItem("userinfo"));
+    if (!userInfo || !userInfo.userid) {
+      console.error("User ID is missing in localStorage.");
+      setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
+      return;
+    }
+  
     const formData = new FormData();
-    console.log("Name to update:", adminName); // ล็อกชื่อที่จะอัปเดต
-
-    if (adminName) formData.append("name", adminName);
-
+    formData.append("name", adminName);
+    formData.append("id", userInfo.userid);
+  
     try {
       const response = await axios.post(
         "https://localhost:7039/api/Admin/UpdateAdminInfo",
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
       setIsEditingName(false);
       setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
     } catch (error) {
-      console.error("Error updating admin name:", error);
-      setUploadMessage(
-        <p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>
-      );
+      console.error("Error updating admin name:", error.response?.data || error);
+      setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
   };
+  
 
   // อัปโหลดรูปโปรไฟล์ใหม่
   const handleUpload = async () => {
@@ -126,13 +144,17 @@ const UserList = () => {
       return;
     }
 
+    var userinfolocalStorage = localStorage.getItem('userinfo')
+    const objUser = JSON.parse(userinfolocalStorage)
+    console.log(objUser.userid)
+
+
     const formData = new FormData();
     formData.append("profilePictures", selectedFile); // ส่งเฉพาะรูปภาพ
-
+    formData.append("id", objUser.userid);
+    console.log(formData)
     try {
-      const response = await axios.post(
-        "https://localhost:7039/api/Admin/UpdateAdminInfo",
-        formData,
+      const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         }
@@ -161,7 +183,6 @@ const UserList = () => {
       );
     }
   };
-
   return (
     <div className="flex flex-col min-h-screen">
       {/* Navbar */}

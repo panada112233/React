@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { NavLink } from 'react-router-dom';
 import axios from "axios";
+import { GetUser } from '../function/apiservice';
+
 
 const sexLabels = {
   Male: "ชาย",
@@ -66,23 +68,22 @@ const UserDetails = () => {
   useEffect(() => {
     const fetchAdminInfo = async () => {
       try {
-        const response = await axios.get("https://localhost:7039/api/Admin/GetAdminInfo");
-        console.log("Admin Info Response:", response.data); // ตรวจสอบข้อมูล
-        setAdminName(response.data.name || "ไม่มีชื่อแอดมิน");
+        const response = await GetUser(); // ใช้ฟังก์ชันจาก apiservice
+        setAdminName(response.name || "ไม่มีชื่อแอดมิน");
         setProfilePic(
-          response.data.profilePictureUrl
-            ? `http://localhost/${response.data.profilePictureUrl}`
+          response.profilePictureUrl
+            ? `http://localhost${response.profilePictureUrl}`
             : "/uploads/admin/default-profile.jpg"
         );
       } catch (error) {
         console.error("Error fetching admin data:", error);
         setAdminName("ไม่สามารถดึงข้อมูลได้");
-        setProfilePic("/uploads/admin/default-profile.jpg");
       }
     };
-
+  
     fetchAdminInfo();
   }, []);
+  
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -105,13 +106,17 @@ const UserDetails = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("profilePictures", selectedFile);
+    var userinfolocalStorage = localStorage.getItem('userinfo')
+    const objUser = JSON.parse(userinfolocalStorage)
+    console.log(objUser.userid)
 
+
+    const formData = new FormData();
+    formData.append("profilePictures", selectedFile); // ส่งเฉพาะรูปภาพ
+    formData.append("id", objUser.userid);
+    console.log(formData)
     try {
-      const response = await axios.post(
-        "https://localhost:7039/api/Admin/UpdateAdminInfo",
-        formData,
+      const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         }
@@ -132,6 +137,7 @@ const UserDetails = () => {
       }
     } catch (error) {
       console.error("Error uploading profile picture:", error);
+
       const errorMessage =
         error.response?.data?.Message || "เกิดข้อผิดพลาดในการอัปโหลด";
       setUploadMessage(
@@ -140,32 +146,39 @@ const UserDetails = () => {
     }
   };
 
-  // ฟังก์ชันอัปเดตชื่อแอดมิน
   const handleNameUpdate = async () => {
+    if (!adminName) {
+      console.error("Admin name is empty, cannot update.");
+      setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
+      return;
+    }
+  
+    // ดึงข้อมูล User ID จาก localStorage
+    const userInfo = JSON.parse(localStorage.getItem("userinfo"));
+    if (!userInfo || !userInfo.userid) {
+      console.error("User ID is missing in localStorage.");
+      setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
+      return;
+    }
+  
     const formData = new FormData();
-    if (adminName) formData.append("name", adminName);
-
+    formData.append("name", adminName);
+    formData.append("id", userInfo.userid);
+  
     try {
-      await axios.post(
+      const response = await axios.post(
         "https://localhost:7039/api/Admin/UpdateAdminInfo",
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
       setIsEditingName(false);
-      setUploadMessage(
-        <p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>
-      );
+      setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
     } catch (error) {
-      console.error("Error updating admin name:", error);
-      setUploadMessage(
-        <p className="text-red-500 font-FontNoto">
-          เกิดข้อผิดพลาดในการบันทึกชื่อ
-        </p>
-      );
+      console.error("Error updating admin name:", error.response?.data || error);
+      setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
   };
+  
 
   if (loading) {
     return <div className="text-center py-6">กำลังโหลดข้อมูล...</div>;

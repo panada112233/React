@@ -62,8 +62,14 @@ const HRView = () => {
         setFormToApprove(null); // ปิด Modal
         setHrName(""); // ล้างค่าชื่อ HR
     };
+    
+    const sendDocumentToEmployee2 = (form) => {
+
+    }
 
     const sendDocumentToEmployee = (form) => {
+        console.log(sessionStorage.getItem("userId"));
+
         const userIdFromSession = sessionStorage.getItem("userId");  // ดึง userId จาก sessionStorage
         const userIdFromForm = form.userId;  // userId จากฟอร์ม
     
@@ -246,7 +252,7 @@ const HRView = () => {
                                     <td className="font-FontNoto text-center">
                                         <button
                                             className="btn btn-sm btn-outline btn-primary"
-                                            onClick={() => sendDocumentToEmployee(form)} // เรียกใช้ฟังก์ชันเมื่อกดปุ่ม
+                                            onClick={() => sendDocumentToEmployee2(form)} // เรียกใช้ฟังก์ชันเมื่อกดปุ่ม
                                         >
                                             ส่งให้พนักงาน
                                         </button>

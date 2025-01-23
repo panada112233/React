@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { NavLink } from 'react-router-dom';
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
 import DIcon from '../assets/12.png';
-
+import { GetUser } from '../function/apiservice'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -41,6 +41,8 @@ const AdminDashboard = () => {
   const [selectedFile, setSelectedFile] = useState(null); // ไฟล์ที่เลือก
   const [uploadMessage, setUploadMessage] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
+  const [userinfostate, setuserinfoState] = useState(0);
+
 
   const categoryMapping = {
     Identification: 'ลาพักร้อน',
@@ -48,6 +50,27 @@ const AdminDashboard = () => {
     Certificate: 'ใบลาป่วย',
     Others: 'อื่นๆ',
   };
+  const fectUserinfo = async () => {
+    try {
+        const responseUser = await GetUser();
+        console.log("Response from GetUser:", responseUser);
+
+        if (!responseUser || !responseUser.userid) {
+            throw new Error("User ID not found in response");
+        }
+
+        setuserinfoState(responseUser.userid); // ตั้งค่า userinfostate
+        setAdminName(responseUser.name || "ไม่มีชื่อแอดมิน");
+        setProfilePic(
+            responseUser.profilePictureUrl
+                ? `http://localhost${responseUser.profilePictureUrl}`
+                : "/uploads/admin/default-profile.jpg"
+        );
+    } catch (e) {
+        console.error("Error fetching user info:", e);
+    }
+};
+
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -65,6 +88,9 @@ const AdminDashboard = () => {
           ...prevStats,
           totalDocuments: response.data.length,
         }));
+
+        await fectUserinfo()
+
       } catch (error) {
         console.error("Error fetching document data:", error);
       }
@@ -84,6 +110,7 @@ const AdminDashboard = () => {
           }));
           fetchDocuments(); // Fetch document data
         }
+
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -94,19 +121,6 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    axios.get('https://localhost:7039/api/Admin/GetAdminInfo')
-      .then(response => {
-        console.log("API Response:", response.data); // ตรวจสอบผลลัพธ์
-        setAdminName(response.data.name || "ไม่มีชื่อแอดมิน"); // ใช้ Name หรือข้อความเริ่มต้น
-        const profileUrls = response.data.profilePictureUrl || [];
-        setProfilePic(profileUrls.length ? `http://localhost/${profileUrls}` : '/uploads/admin/default-profile.jpg');
-      })
-      .catch(error => {
-        console.error('Error fetching admin data:', error);
-        setAdminName("ไม่สามารถดึงข้อมูลได้");
-      });
-  }, []);
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -121,28 +135,29 @@ const AdminDashboard = () => {
   };
 
   const handleNameUpdate = async () => {
-    const formData = new FormData();
-    console.log("Name to update:", adminName); // ล็อกชื่อที่จะอัปเดต
+    if (!userinfostate) {
+        console.error("User ID is missing, cannot update admin name");
+        setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณาตรวจสอบข้อมูลผู้ใช้</p>);
+        return;
+    }
 
-    if (adminName) formData.append("name", adminName);
+    const formData = new FormData();
+    formData.append("name", adminName);
+    formData.append("id", userinfostate);
 
     try {
-      const response = await axios.post(
-        "https://localhost:7039/api/Admin/UpdateAdminInfo",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-      setIsEditingName(false);
-      setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
+        const response = await axios.post(
+            "https://localhost:7039/api/Admin/UpdateAdminInfo",
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } }
+        );
+        setIsEditingName(false);
+        setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
     } catch (error) {
-      console.error("Error updating admin name:", error);
-      setUploadMessage(
-        <p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>
-      );
+        console.error("Error updating admin name:", error.response?.data || error);
+        setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
-  };
+};
 
   // อัปโหลดรูปโปรไฟล์ใหม่
   const handleUpload = async () => {
@@ -153,13 +168,17 @@ const AdminDashboard = () => {
       return;
     }
 
+    var userinfolocalStorage = localStorage.getItem('userinfo')
+    const objUser = JSON.parse(userinfolocalStorage)
+    console.log(objUser.userid)
+
+
     const formData = new FormData();
     formData.append("profilePictures", selectedFile); // ส่งเฉพาะรูปภาพ
-
+    formData.append("id", objUser.userid);
+    console.log(formData)
     try {
-      const response = await axios.post(
-        "https://localhost:7039/api/Admin/UpdateAdminInfo",
-        formData,
+      const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         }
@@ -295,7 +314,6 @@ const AdminDashboard = () => {
     },
   };
 
-
   return (
     <div className="flex flex-col min-h-screen">
       {/* Navbar */}
@@ -400,7 +418,7 @@ const AdminDashboard = () => {
             <li><Link to="/EducationList" className="hover:bg-purple-100 hover:text-black font-FontNoto font-bold">การศึกษา</Link></li>
             <li><Link to="/AdminLogout" className="hover:bg-error hover:text-white font-FontNoto font-bold">ออกจากระบบ</Link></li>
           </ul>
-        </div> 
+        </div>
         {/* Content */}
         <div className="flex-1 p-10 bg-white shadow-lg rounded-lg ml-1">
           <div className="flex justify-between items-center mb-6">
@@ -478,3 +496,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+
