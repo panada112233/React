@@ -88,8 +88,11 @@ const Alleducation = () => {
                     <Link to="/EmpHome/Allexperiences" className="btn btn-outline btn-info font-FontNoto mt-2" style={{ marginRight: '10px' }}>
                         ประสบการณ์ทำงาน
                     </Link>
-                    <Link to="/EmpHome/Alleducation" className="btn btn-outline btn-primary font-FontNoto mt-2">
+                    <Link to="/EmpHome/Alleducation" className="btn btn-outline btn-primary font-FontNoto mt-2" style={{ marginRight: '10px' }}>
                         การศึกษาพนักงาน
+                    </Link>
+                    <Link to="/EmpHome/Allcreate" className="btn btn-outline btn-secondary font-FontNoto mt-2">
+                        เพิ่มพนักงานใหม่
                     </Link>
                     <div className="mb-6"></div>
                     <h2 className="text-2xl font-bold text-black font-FontNoto mb-4">ข้อมูลการศึกษาพนักงาน</h2>

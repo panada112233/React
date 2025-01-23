@@ -107,7 +107,7 @@ const LeaveForm = () => {
                     [name]: value,
                 }));
             }
-            return;
+            return; 
         }
 
         // ตรวจสอบให้กรอกเฉพาะตัวอักษรภาษาไทยและช่องว่างสำหรับฟิลด์อื่นๆ
@@ -177,26 +177,36 @@ const LeaveForm = () => {
         setFormData(selectedForm);
     };
 
-    const handleSendToManager = () => {
-        if (!formData.date || !formData.department || !formData.position) {
-            return alert("กรุณากรอกข้อมูลในฟอร์มให้ครบถ้วน");
-        }
+const handleSendToManager = () => {
+    if (!formData.date || !formData.department || !formData.position) {
+        return alert("กรุณากรอกข้อมูลในฟอร์มให้ครบถ้วน");
+    }
 
-        // เพิ่ม id ให้ฟอร์ม
-        const updatedForm = addIdToForm(formData);
+    const userId = sessionStorage.getItem("userId"); // ดึง userId จาก sessionStorage
+    if (!userId) {
+        return alert("ไม่สามารถระบุพนักงานได้ กรุณาลองเข้าสู่ระบบใหม่");
+    }
 
-        // ดึงข้อมูลฟอร์มจาก localStorage
-        const managerForms = JSON.parse(localStorage.getItem("managerForms")) || [];
-
-        // อัปเดตรายการฟอร์ม
-        const updatedForms = [...managerForms, updatedForm];
-
-        // บันทึกลง localStorage
-        localStorage.setItem("managerForms", JSON.stringify(updatedForms));
-
-        // เปิด Modal แจ้งเตือน
-        setNotificationModalOpen(true);
+    // เพิ่ม id และ userId ให้ฟอร์ม
+    const updatedForm = {
+        ...formData,
+        userId, // เก็บ userId ในฟอร์ม
+        id: Date.now(), // สร้าง ID แบบไม่ซ้ำ
     };
+
+    // ดึงข้อมูลฟอร์มจาก localStorage
+    const managerForms = JSON.parse(localStorage.getItem("managerForms")) || [];
+
+    // อัปเดตรายการฟอร์ม
+    const updatedForms = [...managerForms, updatedForm];
+
+    // บันทึกลง localStorage
+    localStorage.setItem("managerForms", JSON.stringify(updatedForms));
+
+    // เปิด Modal แจ้งเตือน
+    setNotificationModalOpen(true);
+};
+
 
     const handleGeneratePDF = () => {
         // Helper function สำหรับแปลงวันที่เป็นรูปแบบ DD/MM/YYYY

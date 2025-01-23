@@ -31,6 +31,7 @@ import MyExperience from './components/My_experience';
 import ChangeProfile from './components/Change_profile';
 import ForgotPassword from './components/ForgotPassword';
 import LeaveForm from './components/LeaveForm';
+import Allcreate from './components/Allcreate';
 
 import AdminDashboard from "./components/AdminDashboard";
 import UserList from "./components/UserList";
@@ -96,6 +97,7 @@ function App() {
               <Route path="ManagerView" element={<ManagerView />} />
               <Route path="HRView" element={<HRView />} />
               <Route path="EmployeeView" element={<EmployeeView />} />
+              <Route path="Allcreate" element={<Allcreate />} />
 
             </Route>
 

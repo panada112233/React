@@ -15,7 +15,7 @@ const ManagerView = () => {
 
 
     // ตรวจสอบและโหลดข้อมูลจาก localStorage เมื่อเริ่มต้น
-    useEffect(() => {
+    useEffect(() => { 
         if (!localStorage.getItem("managerForms")) {
             localStorage.setItem("managerForms", JSON.stringify([]));
         }

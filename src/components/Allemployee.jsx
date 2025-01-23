@@ -82,10 +82,12 @@ const Allemployee = () => {
                     <Link to="/EmpHome/Allexperiences" className="btn btn-outline btn-info font-FontNoto mt-2" style={{ marginRight: '10px' }}>
                         ประสบการณ์ทำงาน
                     </Link>
-                    <Link to="/EmpHome/Alleducation" className="btn btn-outline btn-primary font-FontNoto mt-2">
+                    <Link to="/EmpHome/Alleducation" className="btn btn-outline btn-primary font-FontNoto mt-2" style={{ marginRight: '10px' }}>
                         การศึกษาพนักงาน
                     </Link>
-
+                    <Link to="/EmpHome/Allcreate" className="btn btn-outline btn-secondary font-FontNoto mt-2">
+                        เพิ่มพนักงานใหม่
+                    </Link>
                     <div className="mb-6"></div>
                         <h2 className="text-2xl font-bold text-black font-FontNoto">ข้อมูลพนักงานในระบบ</h2>
                     {/* Search Form */}
@@ -145,7 +147,7 @@ const Allemployee = () => {
                                                                     className="w-32 h-32 rounded-lg object-cover border-2 border-yellow-500 font-FontNoto"
                                                                 />
                                                             </div>
-                                                        </td>
+                                                        </td> 
 
                                                         <td className="border px-4 py-2 font-FontNoto">{user.firstName}</td>
                                                         <td className="border px-4 py-2 font-FontNoto">{user.lastName}</td>

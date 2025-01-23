@@ -148,14 +148,6 @@ const EmpBase = () => {
                     ใบลาพนักงาน
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    to="/EmpHome/HRView"
-                    className="hover:bg-slate-100 hover:text-black font-FontNoto font-bold"
-                  >
-                    ใบลาพนักงานนนนนน
-                  </Link>
-                </li>
               </>
             ) : null}
             {role === "GM" || role === "Hr" ? (
