@@ -63,40 +63,37 @@ const HRView = () => {
         setHrName(""); // ล้างค่าชื่อ HR
     };
     
-    const sendDocumentToEmployee2 = (form) => {
-
-    }
-
-    const sendDocumentToEmployee = (form) => {
-        console.log(sessionStorage.getItem("userId"));
-
-        const userIdFromSession = sessionStorage.getItem("userId");  // ดึง userId จาก sessionStorage
-        const userIdFromForm = form.userId;  // userId จากฟอร์ม
+    const deleteFormForHR = (formId) => {
+        const savedFormsForHR = JSON.parse(localStorage.getItem("sentToEmployeesFormsForHR")) || [];
+        const updatedFormsForHR = savedFormsForHR.filter((form) => form.id !== formId);
+        setSentToEmployeesForms(updatedFormsForHR);
+        localStorage.setItem("sentToEmployeesFormsForHR", JSON.stringify(updatedFormsForHR));
+        console.log(`Form with ID ${formId} has been deleted for HR only.`);
+    };
     
-        // ตรวจสอบว่า userId ตรงกันหรือไม่
-        if (userIdFromSession !== userIdFromForm) {
-            console.error("UserId mismatch, expected userId is:", userIdFromSession, "but received:", userIdFromForm);
-            return;  // ถ้าไม่ตรงให้หยุดการทำงาน 
-        }
-    
-        // โหลดเอกสารที่ส่งให้พนักงานจาก localStorage
-        const savedDocuments = JSON.parse(localStorage.getItem("sentToEmployeesForms")) || [];
         
-        // กรองเอกสารเก่าที่มี userId ซ้ำออก และเพิ่มเอกสารใหม่ที่ส่งให้พนักงาน
+    const sendDocumentToEmployee2 = (form) => {
+        const userIdFromForm = form.userId; // เก็บ userId จากฟอร์ม
+        const savedDocuments = JSON.parse(localStorage.getItem("sentToEmployeesForms")) || [];
+    
+        // เพิ่มฟอร์มพร้อม userId เดิมไปยัง localStorage
         const updatedDocuments = [
-            ...savedDocuments.filter(doc => doc.userId !== userIdFromForm),  // ลบเอกสารที่มี userId ซ้ำ
-            { ...form, userId: userIdFromForm }  // เก็บ userId ของพนักงานที่ถูกต้อง
+            ...savedDocuments.filter(doc => doc.id !== form.id), // ลบฟอร์มเก่าที่มี id ซ้ำ
+            { ...form, userId: userIdFromForm } // ใช้ userId เดิมของพนักงาน
         ];
     
-        // อัปเดต localStorage เพื่อเก็บเอกสารของพนักงาน
+        // อัปเดตฟอร์มใน localStorage
         localStorage.setItem("sentToEmployeesForms", JSON.stringify(updatedDocuments));
-    
-        // อัปเดต state สำหรับการส่งฟอร์มให้พนักงาน
         setSentToEmployeesForms(updatedDocuments);
     
+        // ลบฟอร์มออกจากรายการที่ HR อนุมัติแล้ว
+        const updatedHrApprovedForms = hrApprovedForms.filter(f => f.id !== form.id);
+        setHrApprovedForms(updatedHrApprovedForms);
+        localStorage.setItem("hrApprovedForms", JSON.stringify(updatedHrApprovedForms));
+    
         console.log(`Document successfully sent to employee with ID: ${userIdFromForm}`);
-    };
-        
+    };    
+    
     // ฟังก์ชันแปลงฟอร์มเป็น PDF และดาวน์โหลด
     const downloadPDF = (form) => {
         const content = `ฟอร์มพนักงาน\n\nชื่อพนักงาน: ${form.department}\nตำแหน่ง: ${form.position}\nวันที่ลา: ${form.fromDate} ถึง ${form.toDate}\nความคิดเห็นหัวหน้า: ${form.managerComment}\nความคิดเห็น HR: ${form.hrComment || ""}`;
@@ -126,13 +123,7 @@ const HRView = () => {
     const closeDeleteModal = () => {
         setSelectedFormToDelete(null);
     };
-    // เพิ่มฟังก์ชันลบฟอร์มที่ส่งให้พนักงาน
-    const deleteEmployeeForm = (formId) => {
-        const updatedForms = sentToEmployeesForms.filter((form) => form.id !== formId);
-        setSentToEmployeesForms(updatedForms);
-        localStorage.setItem("sentToEmployeesForms", JSON.stringify(updatedForms));
-    };
-
+ 
     return (
         <div className="p-6">
             {/* ฟอร์มที่หัวหน้าอนุมัติ */}
@@ -466,15 +457,17 @@ const HRView = () => {
 
             {/* ฟอร์มที่ส่งให้พนักงาน */}
             <section className="mt-8">
-                <h2 className="text-lg font-bold mb-2 font-FontNoto">ฟอร์มที่ส่งให้พนักงาน</h2>
+                <h2 className="text-lg font-bold mb-2 font-FontNoto">ฟอร์มที่ส่งให้พนักงานแล้ว</h2>
                 {sentToEmployeesForms.length > 0 ? (
                     <table className="table table-zebra w-full">
                         <thead>
-                            <tr>
+                            <tr className="text-black bg-blue-100">
                                 <th>#</th>
                                 <th className="font-FontNoto">ชื่อพนักงาน</th>
+                                <th className="font-FontNoto">ลายเซ็นผู้จัดการทั่วไป</th>
+                                <th className="font-FontNoto">ความคิดเห็น</th>
+                                <th className="font-FontNoto">ชื่อฝ่ายบุคคล</th>
                                 <th className="font-FontNoto">วันที่ HR อนุมัติ</th>
-                                <th className="font-FontNoto">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -482,8 +475,11 @@ const HRView = () => {
                                 <tr key={form.id}>
                                     <td className="font-FontNoto">{index + 1}</td>
                                     <td className="font-FontNoto">{form.department}</td>
+                                    <td className="font-FontNoto">{form.managerName}</td>
+                                    <td className="font-FontNoto">{form.managerComment}</td>
+                                    <td className="font-FontNoto">{form.hrSignature}</td>
                                     <td className="font-FontNoto">{form.hrApprovedDate}</td>
-                                    <td className="font-FontNoto">
+                                    {/* <td className="font-FontNoto">
                                         <button
                                             className="btn btn-sm btn-outline btn-secondary"
                                             onClick={() => downloadPDF(form)}
@@ -492,11 +488,11 @@ const HRView = () => {
                                         </button>
                                         <button
                                             className="btn btn-sm btn-outline btn-error ml-2"
-                                            onClick={() => deleteEmployeeForm(form.id)}
+                                            onClick={() => deleteFormForHR(form.id)}
                                         >
                                             ลบ
                                         </button>
-                                    </td>
+                                    </td> */}
                                 </tr>
                             ))}
                         </tbody>

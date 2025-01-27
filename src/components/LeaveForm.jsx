@@ -42,13 +42,6 @@ const LeaveForm = () => {
     const [itemToDelete, setItemToDelete] = useState(null);
     const [isNotificationModalOpen, setNotificationModalOpen] = useState(false);
 
-    // ฟังก์ชันเพิ่ม id ให้ฟอร์ม
-    const addIdToForm = (form) => ({
-        ...form,
-        id: form.id || Date.now(), // เพิ่ม id ถ้ายังไม่มี
-    });
-
-
     useEffect(() => {
         if (!userId) {
             console.error("User ID ไม่ถูกตั้งค่าใน sessionStorage");
@@ -158,7 +151,7 @@ const LeaveForm = () => {
             sickDaysTotal: "",
             personalDaysUsed: "",
             personalDaysCurrent: "",
-            personalDaysTotal: "",
+            personalDaysTotal: "", 
             vacationDaysUsed: "",
             vacationDaysCurrent: "",
             vacationDaysTotal: "",

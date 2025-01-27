@@ -34,7 +34,7 @@ const ManagerView = () => {
         const filteredManagerForms = managerForms.filter((form) =>
             !savedApprovedForms.some((approvedForm) => approvedForm.id === form.id)
         );
-
+        
         setForms(filteredManagerForms);
         setApprovedForms(savedApprovedForms);
         setHrForms(savedHrForms);
@@ -42,14 +42,12 @@ const ManagerView = () => {
         if (savedSelectedForm) setSelectedHRForm(savedSelectedForm);
     }, []);
 
-    // ฟังก์ชันเพิ่ม id ให้ฟอร์ม (ใช้ Date.now() เพื่อสร้าง id)
     const addIdToForm = (form) => ({
         ...form,
         id: form.id || Date.now(), // สร้าง id ถ้ายังไม่มี
-        userId: sessionStorage.getItem("userId"), // เพิ่ม userId จาก sessionStorage
+        userId: form.userId || sessionStorage.getItem("userId"), // เก็บ userId เดิมถ้ามีอยู่
     });
     
-
     // ฟังก์ชันดูรายละเอียดฟอร์ม
     const viewPendingFormDetails = (form) => {
         setSelectedPendingForm(form);
@@ -82,28 +80,28 @@ const ManagerView = () => {
             alert("กรุณากรอกชื่อหัวหน้า!");
             return;
         }
-
+    
         const updatedForm = addIdToForm({
             ...form,
             managerName,
             managerComment,
             approvedDate: new Date().toLocaleDateString(),
         });
-
+    
         const updatedApprovedForms = [...approvedForms, updatedForm];
         const updatedManagerForms = forms.filter((f) => f.id !== form.id);
-
+    
         setApprovedForms(updatedApprovedForms);
         setForms(updatedManagerForms);
-
+    
         localStorage.setItem("approvedForms", JSON.stringify(updatedApprovedForms));
         localStorage.setItem("managerForms", JSON.stringify(updatedManagerForms));
-
+    
         setSelectedPendingForm(null);
         setManagerComment("");
         setManagerName("");
     };
-
+    
     // ฟังก์ชันส่งฟอร์มให้ HR
     const sendToHR = (form) => {
         if (!form.userId) {
@@ -111,10 +109,10 @@ const ManagerView = () => {
             return;
         }
     
-        const updatedForm = {
+        const updatedForm = addIdToForm({
             ...form,
             sentToHRDate: new Date().toLocaleDateString(),
-        };
+        });
     
         const updatedHrForms = [...hrForms, updatedForm];
         const updatedApprovedForms = approvedForms.filter((f) => f.id !== form.id);
@@ -125,7 +123,7 @@ const ManagerView = () => {
         localStorage.setItem("hrForms", JSON.stringify(updatedHrForms));
         localStorage.setItem("approvedForms", JSON.stringify(updatedApprovedForms));
     };    
-    
+        
     // ฟังก์ชันแก้ไขฟอร์ม
     const editApprovedForm = (form) => {
         setSelectedPendingForm(form);
@@ -134,13 +132,17 @@ const ManagerView = () => {
 
     // ฟังก์ชันบันทึกการแก้ไข
     const saveEditedForm = (editedForm) => {
+        const updatedForm = addIdToForm(editedForm);
+    
         const updatedForms = approvedForms.map((form) =>
-            form.id === editedForm.id ? editedForm : form
+            form.id === updatedForm.id ? updatedForm : form
         );
+    
         setApprovedForms(updatedForms);
         localStorage.setItem("approvedForms", JSON.stringify(updatedForms));
         setSelectedPendingForm(null); // ปิด Modal
     };
+    
     // ฟังก์ชันสำหรับตรวจสอบการพิมพ์ว่าเป็นภาษาไทยหรือไม่
     const handleKeyDown = (e) => {
         const key = e.key;
@@ -358,7 +360,7 @@ const ManagerView = () => {
                                     </button>
                                    {/* <button
                                         className="btn btn-sm btn-outline btn-error font-FontNoto"
-                                        onClick={() => setSelectedFormToDelete(form)}
+                                        onClick={() => confirmDelete(form)}
                                     >
                                         ลบ
                                     </button> */}
