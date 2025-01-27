@@ -13,7 +13,7 @@ const roleMapping = {
   BA: "นักวิเคราะห์ธุรกิจ",
   Employee: "พนักงาน",
 };
-
+ 
 const EmpHome = () => {
   const [userName, setUserName] = useState("กำลังโหลด...");
   const [roleText, setRoleText] = useState("กำลังโหลด...");

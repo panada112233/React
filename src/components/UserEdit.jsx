@@ -140,10 +140,10 @@ const UserEdit = () => {
         setAdminName("ไม่สามารถดึงข้อมูลได้");
       }
     };
-  
+
     fetchAdminInfo();
   }, []);
-  
+
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -163,7 +163,7 @@ const UserEdit = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
       return;
     }
-  
+
     // ดึงข้อมูล User ID จาก localStorage
     const userInfo = JSON.parse(localStorage.getItem("userinfo"));
     if (!userInfo || !userInfo.userid) {
@@ -171,11 +171,11 @@ const UserEdit = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("name", adminName);
     formData.append("id", userInfo.userid);
-  
+
     try {
       const response = await axios.post(
         "https://localhost:7039/api/Admin/UpdateAdminInfo",
@@ -189,7 +189,7 @@ const UserEdit = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
   };
-  
+
 
   // อัปโหลดรูปโปรไฟล์ใหม่
   const handleUpload = async () => {
@@ -345,8 +345,14 @@ const UserEdit = () => {
         {/* Content */}
         <div className="flex-1 p-20 bg-white shadow-lg rounded-lg ml-1">
           <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6">
-            <div className="text-left ">
+            <div className="mt-6 flex justify-between ">
               <h2 className="text-2xl font-bold text-black font-FontNoto">แก้ไขข้อมูลพนักงาน</h2>
+              <button
+                onClick={() => navigate("/UserList")}
+                className="btn btn-outline btn-error font-FontNoto"
+              >
+                กลับไปยังรายการ
+              </button>
             </div>
             <div className="flex flex-col gap-4">
               <div> </div>
@@ -464,9 +470,9 @@ const UserEdit = () => {
       {showModal && (
         <dialog open className="modal" onClick={closeModal}>
           <div className="modal-box">
-            <h3 className="font-bold text-lg">{modalMessage}</h3>
+            <h3 className="font-bold text-lg font-FontNoto">{modalMessage}</h3>
             <div className="modal-action">
-              <button className="btn btn-outline btn-error" onClick={closeModal}>
+              <button className="btn btn-outline btn-error font-FontNoto" onClick={closeModal}>
                 ปิด
               </button>
             </div>

@@ -65,7 +65,7 @@ const EmpBase = () => {
       };
       fetchProfileImageAndUserData();
     }
-  }, [userID]);
+  }, [userID]); 
 
   return (
     <div className="flex flex-col min-h-screen">

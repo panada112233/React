@@ -31,6 +31,8 @@ const formatDateForDisplay = (date) => {
 const UserDetails = () => {
   const { UserID } = useParams();  // ดึง UserID จาก URL
   const [user, setUser] = useState(null);
+  const [educations, setEducations] = useState([]);
+  const [workExperiences, setWorkExperiences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [profilePic, setProfilePic] = useState(""); // รูปโปรไฟล์
   const [adminName, setAdminName] = useState(""); // ชื่อจริงของแอดมิน
@@ -48,20 +50,33 @@ const UserDetails = () => {
       return;
     }
 
-    const fetchUserData = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `https://localhost:7039/api/Admin/Users/${UserID}`
+        // ดึงข้อมูลผู้ใช้งาน
+        const userResponse = await axios.get(`https://localhost:7039/api/Admin/Users/${UserID}`);
+        setUser(userResponse.data || null);
+
+        // ดึงข้อมูลการศึกษา
+        const educationResponse = await axios.get("https://localhost:7039/api/Admin/Educations");
+        const filteredEducations = educationResponse.data.filter(
+          (education) => education.userID === parseInt(UserID, 10)
         );
-        setUser(response.data || null);
+        setEducations(filteredEducations);
+
+        // ดึงข้อมูลประสบการณ์ทำงาน
+        const workResponse = await axios.get("https://localhost:7039/api/Admin/WorkExperiences");
+        const filteredExperiences = workResponse.data.filter(
+          (experience) => experience.userID === parseInt(UserID, 10)
+        );
+        setWorkExperiences(filteredExperiences);
       } catch (error) {
-        setError("ไม่สามารถโหลดข้อมูลผู้ใช้งานได้");
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData();
+    fetchData();
   }, [UserID, navigate]);
 
   // ดึงข้อมูลแอดมิน
@@ -80,10 +95,10 @@ const UserDetails = () => {
         setAdminName("ไม่สามารถดึงข้อมูลได้");
       }
     };
-  
+
     fetchAdminInfo();
   }, []);
-  
+
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -152,7 +167,7 @@ const UserDetails = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
       return;
     }
-  
+
     // ดึงข้อมูล User ID จาก localStorage
     const userInfo = JSON.parse(localStorage.getItem("userinfo"));
     if (!userInfo || !userInfo.userid) {
@@ -160,11 +175,11 @@ const UserDetails = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("name", adminName);
     formData.append("id", userInfo.userid);
-  
+
     try {
       const response = await axios.post(
         "https://localhost:7039/api/Admin/UpdateAdminInfo",
@@ -178,7 +193,7 @@ const UserDetails = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
   };
-  
+
 
   if (loading) {
     return <div className="text-center py-6">กำลังโหลดข้อมูล...</div>;
@@ -281,9 +296,6 @@ const UserDetails = () => {
             <li><Link to="/AdminDashboard" className="hover:bg-green-100 hover:text-black font-FontNoto font-bold">Dashboard</Link></li>
             <li><Link to="/LeaveGraph" className="hover:bg-green-100 font-FontNoto font-bold">สถิติการลาพนักงาน</Link></li>
             <li><NavLink to="/UserList" className={({ isActive }) => isActive ? "hover:bg-gray-300 hover:text-black font-FontNoto font-bold bg-gray-200" : "hover:bg-yellow-100 hover:text-black font-FontNoto font-bold"}>ข้อมูลพนักงาน</NavLink></li>
-            <li><Link to="/FileList" className="hover:bg-orange-100 hover:text-black font-FontNoto font-bold">จัดการเอกสาร</Link></li>
-            <li><Link to="/WorkExperienceList" className="hover:bg-yellow-100 hover:text-black font-FontNoto font-bold">ประสบการณ์ทำงาน</Link></li>
-            <li><Link to="/EducationList" className="hover:bg-purple-100 hover:text-black font-FontNoto font-bold">การศึกษา</Link></li>
             <li><Link to="/AdminLogout" className="hover:bg-error hover:text-white font-FontNoto font-bold">ออกจากระบบ</Link></li>
           </ul>
         </div>
@@ -326,7 +338,7 @@ const UserDetails = () => {
                 <p className="font-FontNoto">{user.designation}</p>
               </div>
               <div>
-                <p className="text-lg font-semibold font-FontNoto">วันที่เข้าร่วม:</p>
+                <p className="text-lg font-semibold font-FontNoto">วันที่เริ่มงาน:</p>
                 <p className="font-FontNoto">{formatDateForDisplay(user.jDate)}</p> {/* ใช้ฟังก์ชัน formatDateForDisplay กับ user.jDate */}
               </div>
               <div>
@@ -346,6 +358,67 @@ const UserDetails = () => {
               </Link>
             </div>
           </div>
+
+          <h2 className="text-xl font-bold mt-6">ประสบการณ์ทำงาน</h2>
+          <table className="table-auto w-full border-collapse border border-gray-300 mt-4">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border px-4 py-2 font-FontNoto">บริษัท</th>
+                <th className="border px-4 py-2 font-FontNoto">ตำแหน่ง</th>
+                <th className="border px-4 py-2 font-FontNoto">เงินเดือน</th>
+                <th className="border px-4 py-2 font-FontNoto">ปีเริ่มต้น</th>
+                <th className="border px-4 py-2 font-FontNoto">ปีสิ้นสุด</th>
+              </tr>
+            </thead>
+            <tbody>
+              {workExperiences.length > 0 ? (
+                workExperiences.map((experience) => (
+                  <tr key={experience.experienceID} className="hover:bg-gray-50">
+                    <td className="border px-4 py-2">{experience.companyName}</td>
+                    <td className="border px-4 py-2">{experience.jobTitle}</td>
+                    <td className="border px-4 py-2">{experience.salary}</td>
+                    <td className="border px-4 py-2 text-center">{experience.startDate}</td>
+                    <td className="border px-4 py-2 text-center">{experience.endDate}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td className="border px-4 py-2 text-center" colSpan={5}>ไม่พบข้อมูลประสบการณ์ทำงาน</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <h2 className="text-xl font-bold mt-6">ประวัติการศึกษา</h2>
+          <table className="table-auto w-full border-collapse border border-gray-300 mt-4">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border px-4 py-2">ระดับการศึกษา</th>
+                <th className="border px-4 py-2">สถาบัน</th>
+                <th className="border px-4 py-2">สาขาวิชา</th>
+                <th className="border px-4 py-2">ปีที่ศึกษา</th>
+                <th className="border px-4 py-2">(GPA)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {educations.length > 0 ? (
+                educations.map((education) => (
+                  <tr key={education.educationID} className="hover:bg-gray-50">
+                    <td className="border px-4 py-2">{education.level}</td>
+                    <td className="border px-4 py-2">{education.institute}</td>
+                    <td className="border px-4 py-2">{education.fieldOfStudy}</td>
+                    <td className="border px-4 py-2 text-center">{education.year}</td>
+                    <td className="border px-4 py-2 text-center">{education.gpa}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td className="border px-4 py-2 text-center" colSpan={5}>ไม่พบข้อมูลการศึกษา</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          
         </div>
       </div>
     </div>
