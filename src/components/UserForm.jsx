@@ -12,7 +12,11 @@ const UserForm = () => {
   const [user, setUser] = useState({
     firstname: '',
     lastname: '',
+    designation: '',
+    contact: '',
     email: '',
+    JDate: "",
+    gender: "",
     passwordHash: '', // Assuming 'passwordHash' is the field used in the backend
     confirmPassword: '',
     role: '',
@@ -40,14 +44,8 @@ const UserForm = () => {
     const { name, value } = e.target;
 
     // เงื่อนไขสำหรับการอนุญาตเฉพาะภาษาไทยและช่องว่าง
-    const thaiPattern = /^[\u0E00-\u0E7F\s]+$/; // สำหรับชื่อและนามสกุล
     const noThaiPattern = /^[^\u0E00-\u0E7F]*$/; // ห้ามตัวอักษรภาษาไทย
     const emailPattern = /^[^\u0E00-\u0E7F\s]+$/; // อนุญาตเฉพาะภาษาอังกฤษและไม่มีช่องว่าง
-
-    // ตรวจสอบชื่อและนามสกุล
-    if ((name === "firstname" || name === "lastname") && !thaiPattern.test(value) && value !== "") {
-      return;
-    }
 
     // ตรวจสอบอีเมล (ห้ามภาษาไทย)
     if (name === "email" && !emailPattern.test(value) && value !== "") {
@@ -57,6 +55,13 @@ const UserForm = () => {
     // ตรวจสอบรหัสผ่าน (ห้ามภาษาไทย)
     if ((name === "passwordHash" || name === "confirmPassword") && !noThaiPattern.test(value) && value !== "") {
       return;
+    }
+
+    if (name === "contact") {
+      const phonePattern = /^[0-9]{0,10}$/; // ยอมรับเฉพาะตัวเลขสูงสุด 10 หลัก
+      if (!phonePattern.test(value)) {
+        return; // ไม่บันทึกค่าที่ไม่ผ่านเงื่อนไข
+      }
     }
 
     // หากผ่านทุกเงื่อนไข ให้บันทึกค่าลงใน state
@@ -86,29 +91,22 @@ const UserForm = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
-    const thaiRegex = /^[\u0E00-\u0E7F]+$/; // สำหรับตรวจสอบภาษาไทย
     const noThaiRegex = /^[^\u0E00-\u0E7F]*$/; // สำหรับตรวจสอบห้ามภาษาไทย
     const emailRegex = /^[^\u0E00-\u0E7F]+$/; // ห้ามตัวอักษรภาษาไทย
 
+    if (user.contact.length !== 10) {
+      setError("กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก");
+      setLoading(false);
+      return;
+    }
+
     // ตรวจสอบว่า Role ถูกเลือกหรือไม่
     if (!user.role) {
-      setError("กรุณาเลือกตำแหน่ง");
+      setError("กรุณาเลือกแผนก");
       setLoading(false);
       return;
     }
 
-    if (!thaiRegex.test(user.firstname)) {
-      setError("ชื่อจะต้องเป็นภาษาไทยเท่านั้น");
-      setLoading(false);
-      return;
-    }
-
-    if (!thaiRegex.test(user.lastname)) {
-      setError("นามสกุลจะต้องเป็นภาษาไทยเท่านั้น");
-      setLoading(false);
-      return;
-    }
     if (!emailRegex.test(user.email)) {
       setError("อีเมลต้องเป็นภาษาอังกฤษและอยู่ในรูปแบบที่ถูกต้อง");
       setLoading(false);
@@ -153,10 +151,10 @@ const UserForm = () => {
         setAdminName("ไม่สามารถดึงข้อมูลได้");
       }
     };
-  
+
     fetchAdminInfo();
   }, []);
-  
+
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -176,7 +174,7 @@ const UserForm = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
       return;
     }
-  
+
     // ดึงข้อมูล User ID จาก localStorage
     const userInfo = JSON.parse(localStorage.getItem("userinfo"));
     if (!userInfo || !userInfo.userid) {
@@ -184,11 +182,11 @@ const UserForm = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("name", adminName);
     formData.append("id", userInfo.userid);
-  
+
     try {
       const response = await axios.post(
         "https://localhost:7039/api/Admin/UpdateAdminInfo",
@@ -202,7 +200,7 @@ const UserForm = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
   };
-  
+
 
   // อัปโหลดรูปโปรไฟล์ใหม่
   const handleUpload = async () => {
@@ -355,143 +353,228 @@ const UserForm = () => {
 
         {/* Form Section */}
         <div className="flex-1 p-20 bg-white shadow-lg rounded-lg ml-1">
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ width: '100%', maxWidth: '32rem', backgroundColor: 'white', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', padding: '2rem', borderRadius: '0.5rem' }}>
-              <div className="text-left ">
-                <h2 className="text-2xl font-bold text-black font-FontNoto text-center">เพิ่มผู้ใช้งาน</h2>
+          <Link to="/UserList" className="btn btn-outline btn-success font-FontNoto mt-2" style={{ marginRight: '10px' }}>
+            ข้อมูลพนักงาน
+          </Link>
+          <Link to="/AdminRegistration" className="btn btn-outline btn-secondary font-FontNoto mt-2" style={{ marginRight: '10px' }}>
+            เพิ่มแอดมิน
+          </Link>
+          <Link to="/UserForm/create" className="btn btn-outline btn-primary font-FontNoto mt-2" style={{ marginRight: '10px' }}>
+            เพิ่มผู้ใช้งาน
+          </Link>
+          <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-10">
+            <h2 className="text-2xl font-bold text-black font-FontNoto text-center">เพิ่มผู้ใช้งาน</h2>
+            {loading && (
+              <p style={{ textAlign: "center", color: "#6B7280" }}>กำลังโหลดข้อมูล...</p>)}
+            {error && <p className="font-FontNoto text-red-500 text-center">{error}</p>}
+
+            <form onSubmit={handleSubmit}>
+              <div className="form-control mb-4">
+                <div className="flex flex-row gap-4">
+                  <div className="w-1/2">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">ชื่อ</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="firstname"
+                      placeholder="ชื่อ"
+                      value={user.firstname}
+                      onChange={handleChange}
+                      className="input input-bordered font-FontNoto w-full"
+                      required
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">นามสกุล</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="lastname"
+                      placeholder="นามสกุล"
+                      value={user.lastname}
+                      onChange={handleChange}
+                      className="input input-bordered font-FontNoto w-full"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-              {loading && <p style={{ textAlign: 'center', color: '#6B7280' }}>กำลังโหลดข้อมูล...</p>}
-              {error && <p style={{ textAlign: 'center', color: '#DC2626' }}>{error}</p>}
 
-              <form onSubmit={handleSubmit}>
-                <div className="form-control mb-4">
-                  <label className="label">
-                    <span className="label-text font-FontNoto">ชื่อ</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="firstname"
-                    placeholder="ชื่อ"
-                    value={user.firstname}
-                    onChange={handleChange}
-                    className="input input-bordered font-FontNoto"
-                    required
-                  />
-                </div>
-
-                <div className="form-control mb-4">
-                  <label className="label">
-                    <span className="label-text font-FontNoto">นามสกุล</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="lastname"
-                    placeholder="นามสกุล"
-                    value={user.lastname}
-                    onChange={handleChange}
-                    className="input input-bordered font-FontNoto"
-                    required
-                  />
-                </div>
-
-                <div className="form-control mb-4">
-                  <label className="label">
-                    <span className="label-text font-FontNoto">แผนก</span>
-                  </label>
-                  <select
-                    name="role"
-                    value={user.role} // ใช้ user.role แทน
-                    onChange={handleChange}
-                    className="select select-bordered font-FontNoto"
-                    required
-                  >
-                    <option value="" disabled>เลือกตำแหน่ง</option>
-                    <option value="Hr">ทรัพยากรบุคคล</option>
-                    <option value="GM">ผู้จัดการทั่วไป</option>
-                    <option value="Dev">นักพัฒนาระบบ</option>
-                    <option value="BA">นักวิเคราะห์ธุรกิจ</option>
-                    <option value="Employee">พนักงาน</option>
-                  </select>
-                </div>
-
-                <div className="form-control mb-4">
-                  <label className="label">
-                    <span className="label-text font-FontNoto">อีเมล</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="อีเมล"
-                    value={user.email}
-                    onChange={handleChange}
-                    className="input input-bordered font-FontNoto"
-                    required
-                  />
-                </div>
-
-                <div className="form-control mb-4 relative">
-                  <label className="label">
-                    <span className="label-text font-FontNoto">รหัสผ่าน</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword.passwordHash ? "text" : "password"}
-                      name="passwordHash"
-                      placeholder="รหัสผ่าน"
-                      value={user.passwordHash}
+              <div className="form-control mb-4">
+                <div className="flex flex-row gap-4">
+                  <div className="w-1/2">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">แผนก</span>
+                    </label>
+                    <select
+                      name="role"
+                      value={user.role}
                       onChange={handleChange}
-                      className="input input-bordered font-FontNoto bg-gray-700 text-white w-full py-3 px-4 rounded-md border border-gray-600"
+                      className="select select-bordered font-FontNoto w-full"
+                      required
+                    >
+                      <option className="font-FontNoto" value="" disabled>เลือกแผนก</option>
+                      <option className="font-FontNoto" value="Hr">ทรัพยากรบุคคล</option>
+                      <option className="font-FontNoto" value="GM">ผู้จัดการทั่วไป</option>
+                      <option className="font-FontNoto" value="Dev">นักพัฒนาระบบ</option>
+                      <option className="font-FontNoto" value="BA">นักวิเคราะห์ธุรกิจ</option>
+                      <option className="font-FontNoto" value="Employee">พนักงาน</option>
+                    </select>
+                  </div>
+                  <div className="w-1/2">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">ตำแหน่ง</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="designation"
+                      placeholder="ตำแหน่ง"
+                      value={user.designation}
+                      onChange={handleChange}
+                      className="input input-bordered font-FontNoto w-full"
                       required
                     />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300 font-FontNoto"
-                      onClick={() => togglePasswordVisibility("passwordHash")}
-                    >
-                      {showPassword.passwordHash ? (
-                        <EyeSlashIcon className="h-5 w-5" />
-                      ) : (
-                        <EyeIcon className="h-5 w-5" />
-                      )}
-                    </button>
                   </div>
                 </div>
-
-                <div className="form-control mb-4 relative">
-                  <label className="label">
-                    <span className="label-text font-FontNoto">ยืนยันรหัสผ่าน</span>
-                  </label>
-                  <div className="relative">
+              </div>
+              <div className="form-control mb-4">
+                <div className="flex flex-row gap-4">
+                  <div className="w-1/2">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">อีเมล</span>
+                    </label>
                     <input
-                      type={showPassword.confirmPassword ? "text" : "password"}
-                      name="confirmPassword"
-                      placeholder="ยืนยันรหัสผ่าน"
-                      value={user.confirmPassword}
+                      type="email"
+                      name="email"
+                      placeholder="อีเมล"
+                      value={user.email}
                       onChange={handleChange}
-                      className="input input-bordered font-FontNoto bg-gray-700 text-white w-full py-3 px-4 rounded-md border border-gray-600"
+                      className="input input-bordered font-FontNoto w-full"
                       required
                     />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300 font-FontNoto"
-                      onClick={() => togglePasswordVisibility("confirmPassword")}
-                    >
-                      {showPassword.confirmPassword ? (
-                        <EyeSlashIcon className="h-5 w-5" />
-                      ) : (
-                        <EyeIcon className="h-5 w-5" />
-                      )}
-                    </button>
+                  </div>
+                  <div className="w-1/2">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">โทรศัพท์</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="contact"
+                      placeholder="โทรศัพท์"
+                      value={user.contact}
+                      onChange={handleChange}
+                      className="input input-bordered font-FontNoto w-full"
+                      required
+                    />
                   </div>
                 </div>
-
-                <div className="form-control font-FontNoto">
-                  <button type="submit" className={`btn btn-warning ${loading && "loading"}`} disabled={loading}>
-                    {loading ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
-                  </button>
+              </div>
+              <div className="form-control mb-4">
+                <div className="flex flex-row gap-4">
+                  <div className="w-1/2">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">วันที่เริ่มงาน</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="JDate"
+                      placeholder="วันที่เริ่มงาน"
+                      value={user.JDate}
+                      onChange={handleChange}
+                      className="input input-bordered font-FontNoto w-full text-black"
+                      required
+                      style={{
+                        colorScheme: "light", // บังคับไอคอนให้ใช้โหมดสว่าง
+                      }}
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">เพศ</span>
+                    </label>
+                    <select
+                      name="gender"
+                      value={user.gender}
+                      onChange={handleChange}
+                      className="select select-bordered font-FontNoto w-full"
+                      required
+                    >
+                      <option className="font-FontNoto" value="" disabled>เลือกเพศ</option>
+                      <option className="font-FontNoto" value="Male">ชาย</option>
+                      <option className="font-FontNoto" value="Female">หญิง</option>
+                    </select>
+                  </div>
                 </div>
-              </form>
-            </div>
+              </div>
+              <div className="form-control mb-4">
+                <div className="flex flex-row gap-4">
+                  {/* Password Field */}
+                  <div className="w-1/2 relative">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">รหัสผ่าน</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword.passwordHash ? "text" : "password"}
+                        name="passwordHash"
+                        placeholder="รหัสผ่าน"
+                        value={user.passwordHash}
+                        onChange={handleChange}
+                        className="input input-bordered font-FontNoto bg-gray-700 text-white w-full py-3 px-4 rounded-md border border-gray-600"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300 font-FontNoto"
+                        onClick={() => togglePasswordVisibility("passwordHash")}
+                      >
+                        {showPassword.passwordHash ? (
+                          <EyeSlashIcon className="h-5 w-5" />
+                        ) : (
+                          <EyeIcon className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password Field */}
+                  <div className="w-1/2 relative">
+                    <label className="label">
+                      <span className="label-text font-FontNoto">ยืนยันรหัสผ่าน</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword.confirmPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        placeholder="ยืนยันรหัสผ่าน"
+                        value={user.confirmPassword}
+                        onChange={handleChange}
+                        className="input input-bordered font-FontNoto bg-gray-700 text-white w-full py-3 px-4 rounded-md border border-gray-600"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300 font-FontNoto"
+                        onClick={() => togglePasswordVisibility("confirmPassword")}
+                      >
+                        {showPassword.confirmPassword ? (
+                          <EyeSlashIcon className="h-5 w-5" />
+                        ) : (
+                          <EyeIcon className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="form-control font-FontNoto">
+                <button type="submit" className={`btn btn-warning ${loading && "loading"}`} disabled={loading}>
+                  {loading ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>

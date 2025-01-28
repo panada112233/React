@@ -41,12 +41,6 @@ const EditWorkExperience = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "companyName" || name === "jobTitle") {
-      // อนุญาตเฉพาะตัวอักษรภาษาไทย
-      const thaiOnly = /^[ก-๙\s]*$/;
-      if (!thaiOnly.test(value)) return;
-    }
-
     if (name === "salary") {
       // ป้องกันค่าติดลบ
       if (value < 0) return;
@@ -79,10 +73,10 @@ const EditWorkExperience = () => {
         setAdminName("ไม่สามารถดึงข้อมูลได้");
       }
     };
-  
+
     fetchAdminInfo();
   }, []);
-  
+
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -101,7 +95,7 @@ const EditWorkExperience = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
       return;
     }
-  
+
     // ดึงข้อมูล User ID จาก localStorage
     const userInfo = JSON.parse(localStorage.getItem("userinfo"));
     if (!userInfo || !userInfo.userid) {
@@ -109,11 +103,11 @@ const EditWorkExperience = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("name", adminName);
     formData.append("id", userInfo.userid);
-  
+
     try {
       const response = await axios.post(
         "https://localhost:7039/api/Admin/UpdateAdminInfo",
@@ -127,7 +121,7 @@ const EditWorkExperience = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
   };
-  
+
 
   // อัปโหลดรูปโปรไฟล์ใหม่
   const handleUpload = async () => {
@@ -141,7 +135,6 @@ const EditWorkExperience = () => {
     var userinfolocalStorage = localStorage.getItem('userinfo')
     const objUser = JSON.parse(userinfolocalStorage)
     console.log(objUser.userid)
-
 
     const formData = new FormData();
     formData.append("profilePictures", selectedFile); // ส่งเฉพาะรูปภาพ
@@ -334,9 +327,15 @@ const EditWorkExperience = () => {
 
         {/* Main Content */}
         <div className="flex-1 p-20 bg-white shadow-lg rounded-lg ml-1">
-          <div className="max-w-5xl mx-auto rounded-lg border border-white p-6 bg-white">
-            <div className="text-left ">
-              <h2 className="text-2xl font-bold text-black font-FontNoto">แก้ไขข้อมูลประสบการณ์ทำงาน</h2>
+          <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <div className="mt-6 flex justify-between ">
+              <h2 className="text-2xl font-bold text-black  font-FontNoto">แก้ไขข้อมูลประสบการณ์ทำงาน</h2>
+              <button
+                onClick={() => navigate("/UserList")}
+                className="btn btn-outline btn-error font-FontNoto"
+              >
+                กลับไปยังรายการ
+              </button>
             </div>
             <form onSubmit={handleSave}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

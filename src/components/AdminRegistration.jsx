@@ -86,10 +86,10 @@ const AdminRegistration = () => {
         setAdminName("ไม่สามารถดึงข้อมูลได้");
       }
     };
-  
+
     fetchAdminInfo();
   }, []);
-  
+
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -108,7 +108,7 @@ const AdminRegistration = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
       return;
     }
-  
+
     // ดึงข้อมูล User ID จาก localStorage
     const userInfo = JSON.parse(localStorage.getItem("userinfo"));
     if (!userInfo || !userInfo.userid) {
@@ -116,11 +116,11 @@ const AdminRegistration = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("name", adminName);
     formData.append("id", userInfo.userid);
-  
+
     try {
       const response = await axios.post(
         "https://localhost:7039/api/Admin/UpdateAdminInfo",
@@ -134,7 +134,7 @@ const AdminRegistration = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
   };
-  
+
 
   // อัปโหลดรูปโปรไฟล์ใหม่
   const handleUpload = async () => {
@@ -286,8 +286,17 @@ const AdminRegistration = () => {
           </ul>
         </div>
         <div className="flex-1 p-10 bg-white shadow-lg rounded-lg ml-1">
+          <Link to="/UserList" className="btn btn-outline btn-success font-FontNoto mt-2" style={{ marginRight: '10px' }}>
+            ข้อมูลพนักงาน
+          </Link>
+          <Link to="/AdminRegistration" className="btn btn-outline btn-secondary font-FontNoto mt-2" style={{ marginRight: '10px' }}>
+            เพิ่มแอดมิน
+          </Link>
+          <Link to="/UserForm/create" className="btn btn-outline btn-primary font-FontNoto mt-2" style={{ marginRight: '10px' }}>
+            เพิ่มผู้ใช้งาน
+          </Link>
           <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-10">
-            <h2 className="text-3xl font-bold text-black font-FontNoto text-center">เพิ่มแอดมิน</h2>
+            <h2 className="text-2xl font-bold text-black font-FontNoto text-center">เพิ่มแอดมิน</h2>
             {message && (
               <div
                 className={`alert ${message.includes("สำเร็จ") ? "alert-success" : "alert-error"
@@ -371,11 +380,11 @@ const AdminRegistration = () => {
 
               <button
                 type="submit"
-                className={`btn btn-primary w-full font-FontNoto${loading ? "loading" : ""
+                className={`btn btn-warning w-full font-FontNoto${loading ? "loading" : ""
                   }`}
                 disabled={loading}
               >
-                {loading ? "กำลังสมัคร..." : "เพิ่ม"}
+                {loading ? "กำลังสมัคร..." : "บันทึกข้อมูล"}
               </button>
             </form>
           </div>

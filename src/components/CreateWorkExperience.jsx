@@ -38,23 +38,23 @@ function CreateWorkExperience() {
     }, []);
     useEffect(() => {
         const fetchAdminInfo = async () => {
-          try {
-            const response = await GetUser(); // ใช้ฟังก์ชันจาก apiservice
-            setAdminName(response.name || "ไม่มีชื่อแอดมิน");
-            setProfilePic(
-              response.profilePictureUrl
-                ? `http://localhost${response.profilePictureUrl}`
-                : "/uploads/admin/default-profile.jpg"
-            );
-          } catch (error) {
-            console.error("Error fetching admin data:", error);
-            setAdminName("ไม่สามารถดึงข้อมูลได้");
-          }
+            try {
+                const response = await GetUser(); // ใช้ฟังก์ชันจาก apiservice
+                setAdminName(response.name || "ไม่มีชื่อแอดมิน");
+                setProfilePic(
+                    response.profilePictureUrl
+                        ? `http://localhost${response.profilePictureUrl}`
+                        : "/uploads/admin/default-profile.jpg"
+                );
+            } catch (error) {
+                console.error("Error fetching admin data:", error);
+                setAdminName("ไม่สามารถดึงข้อมูลได้");
+            }
         };
-      
+
         fetchAdminInfo();
-      }, []);
-      
+    }, []);
+
 
     const handleProfilePicChange = (event) => {
         const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -70,94 +70,90 @@ function CreateWorkExperience() {
 
     const handleNameUpdate = async () => {
         if (!adminName) {
-          console.error("Admin name is empty, cannot update.");
-          setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
-          return;
+            console.error("Admin name is empty, cannot update.");
+            setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
+            return;
         }
-      
+
         // ดึงข้อมูล User ID จาก localStorage
         const userInfo = JSON.parse(localStorage.getItem("userinfo"));
         if (!userInfo || !userInfo.userid) {
-          console.error("User ID is missing in localStorage.");
-          setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
-          return;
+            console.error("User ID is missing in localStorage.");
+            setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
+            return;
         }
-      
+
         const formData = new FormData();
         formData.append("name", adminName);
         formData.append("id", userInfo.userid);
-      
+
         try {
-          const response = await axios.post(
-            "https://localhost:7039/api/Admin/UpdateAdminInfo",
-            formData,
-            { headers: { "Content-Type": "multipart/form-data" } }
-          );
-          setIsEditingName(false);
-          setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
+            const response = await axios.post(
+                "https://localhost:7039/api/Admin/UpdateAdminInfo",
+                formData,
+                { headers: { "Content-Type": "multipart/form-data" } }
+            );
+            setIsEditingName(false);
+            setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
         } catch (error) {
-          console.error("Error updating admin name:", error.response?.data || error);
-          setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
+            console.error("Error updating admin name:", error.response?.data || error);
+            setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
         }
-      };
-      
+    };
+
 
     // อัปโหลดรูปโปรไฟล์ใหม่
     const handleUpload = async () => {
         if (!selectedFile) {
-          setUploadMessage(
-            <p className="font-FontNoto text-red-500">กรุณาเลือกไฟล์ก่อนอัปโหลด</p>
-          );
-          return;
+            setUploadMessage(
+                <p className="font-FontNoto text-red-500">กรุณาเลือกไฟล์ก่อนอัปโหลด</p>
+            );
+            return;
         }
-    
+
         var userinfolocalStorage = localStorage.getItem('userinfo')
         const objUser = JSON.parse(userinfolocalStorage)
         console.log(objUser.userid)
-    
-    
+
+
         const formData = new FormData();
         formData.append("profilePictures", selectedFile); // ส่งเฉพาะรูปภาพ
         formData.append("id", objUser.userid);
         console.log(formData)
         try {
-          const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
-            {
-              headers: { "Content-Type": "multipart/form-data" },
+            const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                }
+            );
+
+            if (response.data && response.data.profilePictureUrl) {
+                const profilePictureUrl = `http://localhost/${response.data.profilePictureUrl}`;
+                setProfilePic(profilePictureUrl);
+                setUploadMessage(
+                    <p className="font-FontNoto text-green-500">อัปโหลดสำเร็จ!</p>
+                );
+            } else {
+                setUploadMessage(
+                    <p className="font-FontNoto text-red-500">
+                        อัปโหลดสำเร็จ แต่ไม่ได้รับ URL ของรูปโปรไฟล์
+                    </p>
+                );
             }
-          );
-    
-          if (response.data && response.data.profilePictureUrl) {
-            const profilePictureUrl = `http://localhost/${response.data.profilePictureUrl}`;
-            setProfilePic(profilePictureUrl);
-            setUploadMessage(
-              <p className="font-FontNoto text-green-500">อัปโหลดสำเร็จ!</p>
-            );
-          } else {
-            setUploadMessage(
-              <p className="font-FontNoto text-red-500">
-                อัปโหลดสำเร็จ แต่ไม่ได้รับ URL ของรูปโปรไฟล์
-              </p>
-            );
-          }
         } catch (error) {
-          console.error("Error uploading profile picture:", error);
-    
-          const errorMessage =
-            error.response?.data?.Message || "เกิดข้อผิดพลาดในการอัปโหลด";
-          setUploadMessage(
-            <p className="font-FontNoto text-red-500">{errorMessage}</p>
-          );
+            console.error("Error uploading profile picture:", error);
+
+            const errorMessage =
+                error.response?.data?.Message || "เกิดข้อผิดพลาดในการอัปโหลด";
+            setUploadMessage(
+                <p className="font-FontNoto text-red-500">{errorMessage}</p>
+            );
         }
-      };
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        // ตรวจสอบชื่อบริษัทและตำแหน่งว่าต้องเป็นภาษาไทยเท่านั้น
-        if ((name === "companyName" || name === "jobTitle") && !/^[ก-๙\s]*$/.test(value)) {
-            return; // หยุดการอัปเดต state ถ้าไม่ใช่ภาษาไทย
-        }
         // ตรวจสอบปีเริ่มต้นและปีสิ้นสุดให้กรอกเฉพาะตัวเลข 4 หลัก
         if ((name === "startDate" || name === "endDate") && !/^\d{0,4}$/.test(value)) {
             return; // หยุดการอัปเดต state ถ้าค่าไม่ใช่ตัวเลข 4 หลัก
@@ -174,9 +170,10 @@ function CreateWorkExperience() {
     const handleUserChange = (e) => {
         setSelectedUserID(e.target.value);
     };
+
     const handleCloseModal = () => {
         setIsModalOpen(false); // ปิด Modal
-        navigate("/WorkExperienceList"); // เด้งกลับไปหน้า WorkExperienceList
+        navigate(`/users/${selectedUserID}`); // เด้งไปหน้า /users/:UserID
     };
 
     const handleSubmit = async (e) => {
@@ -184,18 +181,18 @@ function CreateWorkExperience() {
 
         const newErrors = {};
 
-        // ตรวจสอบว่า companyName และ jobTitle เป็นภาษาไทย
-        const thaiRegex = /^[ก-๙\s]+$/;
-        if (!thaiRegex.test(newExperience.companyName)) {
-            newErrors.companyName = "กรุณากรอกชื่อบริษัทเป็นภาษาไทยเท่านั้น";
+        // ตรวจสอบ startDate และ endDate ว่ามีความยาวครบ 4 หลัก
+        if (newExperience.startDate.length !== 4 || isNaN(newExperience.startDate)) {
+            newErrors.startDate = "กรุณากรอกปีที่เริ่มต้นให้ครบ 4 หลัก";
         }
-        if (!thaiRegex.test(newExperience.jobTitle)) {
-            newErrors.jobTitle = "กรุณากรอกตำแหน่งเป็นภาษาไทยเท่านั้น";
+
+        if (newExperience.endDate && (newExperience.endDate.length !== 4 || isNaN(newExperience.endDate))) {
+            newErrors.endDate = "กรุณากรอกปีที่สิ้นสุดให้ครบ 4 หลัก";
         }
 
         // ตรวจสอบว่า salary ไม่ติดลบ
         const salary = parseFloat(newExperience.salary);
-        if (salary < 0) {
+        if (salary < 0 || isNaN(salary)) {
             newErrors.salary = "เงินเดือนไม่สามารถเป็นค่าติดลบได้";
         }
 
@@ -336,8 +333,8 @@ function CreateWorkExperience() {
                 {isModalOpen && (
                     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                         <div className="bg-white rounded-lg shadow-lg p-6 w-1/3">
-                            <h2 className="text-xl font-bold text-center mb-4 font-FontNoto">เพิ่มข้อมูลสำเร็จ</h2>
-                            <p className="text-center font-FontNoto">ข้อมูลประสบการณ์ทำงานถูกบันทึกเรียบร้อยแล้ว</p>
+                            <h2 className="text-xl font-bold mb-4 font-FontNoto">เพิ่มข้อมูลสำเร็จ</h2>
+                            <p className="font-FontNoto">ข้อมูลประสบการณ์ทำงานถูกบันทึกเรียบร้อยแล้ว</p>
                             <div className="mt-4 flex justify-center">
                                 <button
                                     className="btn btn-primary font-FontNoto"
@@ -352,7 +349,15 @@ function CreateWorkExperience() {
                 {/* Main Content */}
                 <div className="flex-1 p-20 bg-white shadow-lg rounded-lg ml-1">
                     <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-4">
-                        <h2 className="text-2xl font-bold text-center mb-4 font-FontNoto">เพิ่มประสบการณ์ทำงาน</h2>
+                        <div className="mt-6 flex justify-between ">
+                            <h2 className="text-2xl font-bold mb-4 font-FontNoto">เพิ่มประสบการณ์ทำงาน</h2>
+                            <button
+                                onClick={() => navigate("/UserList")}
+                                className="btn btn-outline btn-error font-FontNoto"
+                            >
+                                กลับไปยังรายการ
+                            </button>
+                        </div>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="form-control">
                                 <label className="label">
@@ -364,9 +369,9 @@ function CreateWorkExperience() {
                                     onChange={handleUserChange}
                                     required
                                 >
-                                    <option value="" disabled>กรุณาเลือกพนักงาน</option>
+                                    <option className="font-FontNoto" value="" disabled>กรุณาเลือกพนักงาน</option>
                                     {users.map((user) => (
-                                        <option key={user.userID} value={user.userID}>
+                                        <option className="font-FontNoto" key={user.userID} value={user.userID}>
                                             {user.firstName || ''} {user.lastName || ''}
                                         </option>
                                     ))}
@@ -387,7 +392,7 @@ function CreateWorkExperience() {
                                         onChange={handleChange}
                                         required
                                     />
-                                    {errors.companyName && <p className="text-red-500 text-sm">{errors.companyName}</p>}
+                                    {errors.companyName && <p className="text-red-500 text-sm font-FontNoto">{errors.companyName}</p>}
                                 </div>
 
                                 <div className="form-control">
@@ -403,7 +408,7 @@ function CreateWorkExperience() {
                                         onChange={handleChange}
                                         required
                                     />
-                                    {errors.jobTitle && <p className="text-red-500 text-sm">{errors.jobTitle}</p>}
+                                    {errors.jobTitle && <p className="text-red-500 text-sm font-FontNoto">{errors.jobTitle}</p>}
                                 </div>
 
                                 <div className="form-control">
@@ -419,7 +424,7 @@ function CreateWorkExperience() {
                                         onChange={handleChange}
                                         required
                                     />
-                                    {errors.salary && <p className="text-red-500 text-sm">{errors.salary}</p>}
+                                    {errors.salary && <p className="text-red-500 text-sm font-FontNoto">{errors.salary}</p>}
                                 </div>
 
                                 <div className="form-control">
@@ -435,6 +440,7 @@ function CreateWorkExperience() {
                                         onChange={handleChange}
                                         required
                                     />
+                                    {errors.startDate && <p className="text-red-500 text-sm font-FontNoto">{errors.startDate}</p>}
                                 </div>
 
                                 <div className="form-control">
@@ -449,6 +455,7 @@ function CreateWorkExperience() {
                                         value={newExperience.endDate}
                                         onChange={handleChange}
                                     />
+                                    {errors.endDate && <p className="text-red-500 text-sm font-FontNoto">{errors.endDate}</p>}
                                 </div>
                             </div>
                             <button type="submit" className="btn btn-warning w-full font-FontNoto">เพิ่มประสบการณ์ทำงาน</button>

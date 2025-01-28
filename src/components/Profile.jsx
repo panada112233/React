@@ -11,11 +11,6 @@ const roleMapping = {
   Employee: "พนักงาน",
 };
 
-const handleChange = (e) => {
-  const { name, value } = e.target;
-  setEmployee({ ...employee, [name]: value });
-};
-
 // ฟังก์ชันแปลง Date object เป็น 'DD-MM-YYYY' พร้อมจัดการ Time Zone และปีพุทธศักราช
 const formatDateForDisplay = (date) => {
   if (!date) return null;
@@ -114,7 +109,7 @@ function Profile() {
           if (base64Image) {
             setCurrentProfileImage(base64Image); // ตั้งค่า Base64 ที่แปลงแล้ว
           } else {
-            setMessages([{ tags: "error", text: "ไม่สามารถแปลงรูปภาพได้" }]);
+            setMessages([{ tags: "error", text: "ไม่สามารถแปลงรูปภาพได้", className: "font-FontNoto" }]);
           }
         } catch (error) {
           const errorMessage = error.response ? (error.response.data.Message || "ไม่สามารถโหลดรูปโปรไฟล์ได้") : "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์";
@@ -141,14 +136,10 @@ function Profile() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const userID = employee.userID;
-    const thaiRegex = /^[ก-๙\s]+$/;
     const contactRegex = /^\d{10}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (
-      !thaiRegex.test(employee.firstName) ||
-      !thaiRegex.test(employee.lastName) ||
-      !thaiRegex.test(employee.designation) ||
       !contactRegex.test(employee.contact) ||
       !emailRegex.test(employee.email)
     ) {
@@ -209,13 +200,13 @@ function Profile() {
       });
 
       if (response.status === 200) {
-        setMessages([{ tags: "success", text: "อัปโหลดรูปโปรไฟล์สำเร็จ!" }]);
+        setMessages([{ tags: "success", text: "อัปโหลดรูปโปรไฟล์สำเร็จ!", className: "font-FontNoto" }]);
         setCurrentProfileImage(`https://localhost:7039${response.data.filePath}`);
         setProfilePicture(null);
       }
     } catch (error) {
       console.error("API Error:", error.response ? error.response.data : error.message);
-      setMessages([{ tags: "error", text: "เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์!" }]);
+      setMessages([{ tags: "error", text: "เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์!", className: "font-FontNoto" }]);
     } finally {
       setLoading(false);
     }
@@ -339,12 +330,11 @@ function Profile() {
             <div className="p-6">
               {messages.length > 0 &&
                 messages.map((message, index) => (
-                  <div key={index} className={`alert alert-${message.tags} mb-4`}>
+                  <div key={index} className={`alert alert-${message.tags} mb-4 ${message.className || ""}`}>
                     {message.text}
                   </div>
                 ))
               }
-
               {currentProfileImage && (
                 <div className="flex items-center justify-between mb-4 font-FontNoto">
                   {/* รูปโปรไฟล์ */}
@@ -395,12 +385,6 @@ function Profile() {
                       placeholder="กรอกชื่อจริง"
                       value={employee.firstName}
                       onChange={handleChange}
-                      onKeyPress={(e) => {
-                        const regex = /^[ก-๙\s]+$/;
-                        if (!regex.test(e.key)) {
-                          e.preventDefault(); // ป้องกันการพิมพ์ตัวอักษรที่ไม่ใช่ภาษาไทย
-                        }
-                      }}
                     />
                   </div>
 
@@ -415,41 +399,26 @@ function Profile() {
                       placeholder="กรอกนามสกุล"
                       value={employee.lastName}
                       onChange={handleChange}
-                      onKeyPress={(e) => {
-                        const regex = /^[ก-๙\s]+$/;
-                        if (!regex.test(e.key)) {
-                          e.preventDefault(); // ป้องกันการพิมพ์ตัวอักษรที่ไม่ใช่ภาษาไทย
-                        }
-                      }}
                     />
                   </div>
-                  <div className="form-control mb-4">
+                  <div className="form-control font-FontNoto">
                     <label className="label">
                       <span className="label-text font-FontNoto">แผนก</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="role"
-                      value={roleMapping[employee.role] || employee.role || ""}
-                      onChange={(e) =>
-                        setEmployee({
-                          ...employee,
-                          role: Object.keys(roleMapping).find(
-                            (key) => roleMapping[key] === e.target.value
-                          ) || e.target.value,
-                        })
-                      }
-                      onKeyPress={(e) => {
-                        const regex = /^[ก-๙\s]+$/;
-                        if (!regex.test(e.key)) {
-                          e.preventDefault(); // ป้องกันการพิมพ์อักขระที่ไม่ใช่ภาษาไทย
-                        }
-                      }}
-                      className="input input-bordered font-FontNoto"
-                      placeholder="กรอกหรือแก้ไขแผนก"
-                    />
+                      className="select select-bordered font-FontNoto"
+                      value={employee.role}
+                      onChange={handleChange}
+                    >
+                      <option className="font-FontNoto" value="">กรุณาเลือกแผนก</option>
+                      <option className="font-FontNoto" value="Hr">ทรัพยากรบุคคล</option>
+                      <option className="font-FontNoto" value="GM">ผู้จัดการทั่วไป</option>
+                      <option className="font-FontNoto" value="Dev">นักพัฒนาระบบ</option>
+                      <option className="font-FontNoto" value="BA">นักวิเคราะห์ธุรกิจ</option>
+                      <option className="font-FontNoto" value="Employee">พนักงาน</option>
+                    </select>
                   </div>
-
                   <div className="form-control font-FontNoto">
                     <label className="label">
                       <span className="label-text font-FontNoto">ตำแหน่ง</span>
@@ -461,12 +430,6 @@ function Profile() {
                       placeholder="กรอกตำแหน่งพนักงาน"
                       value={employee.designation}
                       onChange={handleChange}
-                      onKeyPress={(e) => {
-                        const regex = /^[ก-๙\s]+$/;
-                        if (!regex.test(e.key)) {
-                          e.preventDefault(); // ป้องกันการพิมพ์อักขระที่ไม่ใช่ภาษาไทย
-                        }
-                      }}
                     />
                   </div>
                   <div className="form-control font-FontNoto">
@@ -511,7 +474,7 @@ function Profile() {
 
                   <div className="form-control font-FontNoto">
                     <label className="label">
-                      <span className="label-text font-FontNoto">วันที่เข้าร่วม</span>
+                      <span className="label-text font-FontNoto">วันที่เริ่มงาน</span>
                     </label>
                     <input
                       type="date"
@@ -521,6 +484,9 @@ function Profile() {
                         employee.JDate
                       }
                       onChange={handleChange}
+                      style={{
+                        colorScheme: "light", // บังคับไอคอนให้ใช้โหมดสว่าง
+                      }}
                     />
 
                   </div>
@@ -534,9 +500,9 @@ function Profile() {
                       value={employee.gender}
                       onChange={handleChange}
                     >
-                      <option value="None">กรุณาเลือกเพศ</option>
-                      <option value="Male">ชาย</option>
-                      <option value="Female">หญิง</option>
+                      <option className="font-FontNoto" value="None">กรุณาเลือกเพศ</option>
+                      <option className="font-FontNoto" value="Male">ชาย</option>
+                      <option className="font-FontNoto" value="Female">หญิง</option>
                     </select>
                   </div>
                   {isModalOpen && (

@@ -13,17 +13,18 @@ const roleMapping = {
     BA: "นักวิเคราะห์ธุรกิจ",
     Employee: "พนักงาน",
 };
+
 // ฟังก์ชันแปลงวันที่ให้เป็นรูปแบบ DD-MM-YYYY
 const formatDateForDisplay = (date) => {
     if (!date) return "-";
     const nDate = new Date(date);
     if (isNaN(nDate)) return "-";
-  
+
     const day = String(nDate.getDate()).padStart(2, "0");
     const month = String(nDate.getMonth() + 1).padStart(2, "0");
     const year = nDate.getFullYear();
     return `${day}-${month}-${year}`; // รูปแบบ DD-MM-YYYY
-  };
+};
 // ข้อมูลพนักงานในระบบ
 const Allemployee = () => {
     const [users, setUsers] = useState([]);
@@ -31,7 +32,7 @@ const Allemployee = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const navigate = useNavigate();
+    const navigate = useNavigate(); // สร้างตัวแปร navigate
 
     useEffect(() => {
         axios
@@ -54,6 +55,10 @@ const Allemployee = () => {
             });
     }, []);
 
+    const handleViewDetails = (user) => {
+        navigate(`/EmpHome/Alldocuments`, { state: { user } }); // ส่งข้อมูล user ไปยังหน้าถัดไป
+        // navigate(`/users/${user.userID}`);
+    };
 
     const handleSearch = () => {
         if (!/^[ก-๙\s]*$/.test(searchTerm)) {
@@ -89,7 +94,7 @@ const Allemployee = () => {
                         เพิ่มพนักงานใหม่
                     </Link>
                     <div className="mb-6"></div>
-                        <h2 className="text-2xl font-bold text-black font-FontNoto">ข้อมูลพนักงานในระบบ</h2>
+                    <h2 className="text-2xl font-bold text-black font-FontNoto">ข้อมูลพนักงานในระบบ</h2>
                     {/* Search Form */}
                     <div className="flex items-center justify-end gap-2 mt-4">
                         {/* Search and Search Button */}
@@ -123,14 +128,14 @@ const Allemployee = () => {
                                     <thead>
                                         <tr className="bg-gray-100">
                                             <th className="border px-4 py-2 font-FontNoto">รูปโปรไฟล์</th>
-                                            <th className="border px-4 py-2 font-FontNoto">ชื่อ</th>
-                                            <th className="border px-4 py-2 font-FontNoto">นามสกุล</th>
+                                            <th className="border px-4 py-2 font-FontNoto">ชื่อ-นามสกุล</th>
                                             <th className="border px-4 py-2 font-FontNoto">อีเมล</th>
                                             <th className="border px-4 py-2 font-FontNoto">เบอร์โทรศัพท์</th>
                                             <th className="border px-4 py-2 font-FontNoto">แผนก</th>
                                             <th className="border px-4 py-2 font-FontNoto">ตำแหน่ง</th>
-                                            <th className="border px-4 py-2 font-FontNoto">วันทีเข้าร่วม</th>
+                                            <th className="border px-4 py-2 font-FontNoto">วันที่เริ่มงาน</th>
                                             <th className="border px-4 py-2 font-FontNoto">เพศ</th>
+                                            <th className="border px-4 py-2 font-FontNoto">ข้อมูล</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -147,16 +152,22 @@ const Allemployee = () => {
                                                                     className="w-32 h-32 rounded-lg object-cover border-2 border-yellow-500 font-FontNoto"
                                                                 />
                                                             </div>
-                                                        </td> 
+                                                        </td>
 
-                                                        <td className="border px-4 py-2 font-FontNoto">{user.firstName}</td>
-                                                        <td className="border px-4 py-2 font-FontNoto">{user.lastName}</td>
+                                                        <td className="border px-4 py-2 font-FontNoto">{user.firstName} {user.lastName}</td>
                                                         <td className="border px-4 py-2 font-FontNoto">{user.email}</td>
                                                         <td className="border px-4 py-2 font-FontNoto text-center">{user.contact}</td>
                                                         <td className="border px-4 py-2 font-FontNoto">{roleMapping[user.role]}</td>
                                                         <td className="border px-4 py-2 font-FontNoto">{user.designation}</td>
                                                         <td className="border px-4 py-2 font-FontNoto text-center">{formatDateForDisplay(user.jDate)}</td>
                                                         <td className="border px-4 py-2 font-FontNoto text-center">{sexLabels[user.gender]}</td>
+                                                        <td className="border px-4 py-2 font-FontNoto text-center">
+                                                            <button
+                                                            className="btn btn-outline btn-info btn-sm font-FontNoto"
+                                                            onClick={() => handleViewDetails(user)}
+                                                        >
+                                                            ดูข้อมูล
+                                                        </button></td>
                                                     </tr>
                                                 );
                                             })

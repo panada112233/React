@@ -45,7 +45,9 @@ const UserEdit = () => {
       axios
         .get(`https://localhost:7039/api/Admin/users/${UserID}`)
         .then((response) => {
-          setUser(response.data);
+          const userData = response.data;
+          userData.JDate = formatDateForDisplay(userData.JDate); // แปลงฟอร์แมตวันที่
+          setUser(userData);
         })
         .catch((error) => {
           console.error("Error loading user data:", error);
@@ -61,18 +63,17 @@ const UserEdit = () => {
   function handleChange(e) {
     const { name, value } = e.target;
 
-    // เงื่อนไขสำหรับการอนุญาตเฉพาะภาษาไทย
-    const thaiPattern = /^[\u0E00-\u0E7F\s]+$/; // อนุญาตเฉพาะตัวอักษรภาษาไทยและช่องว่าง
-
-    // ตรวจสอบข้อมูลเฉพาะฟิลด์ที่ต้องการให้เป็นภาษาไทยเท่านั้น
-    if (['firstName', 'lastName', 'department', 'designation'].includes(name)) {
-      if (!thaiPattern.test(value)) {
-        return; // ข้อมูลไม่ผ่านเงื่อนไข ไม่อัปเดตค่า
-      }
-    }
+   // เงื่อนไขสำหรับวันที่
+  if (name === "JDate") {
+    setUser((prevUser) => ({
+      ...prevUser,
+      JDate: value, // เก็บฟอร์แมต YYYY-MM-DD ตรงๆ
+    }));
+    return;
+  }
 
     // เงื่อนไขสำหรับเบอร์โทรศัพท์
-    if (name === 'contact') {
+    if (name === "contact") {
       const numericPattern = /^\d*$/; // ยอมรับเฉพาะตัวเลข
       if (!numericPattern.test(value)) {
         return; // ถ้าไม่ใช่ตัวเลข ให้หยุดการเปลี่ยนแปลง
@@ -80,21 +81,21 @@ const UserEdit = () => {
 
       // อัปเดตค่าได้เฉพาะเมื่อจำนวนตัวเลขไม่เกิน 10 หลัก
       if (value.length <= 10) {
-        setUser({ ...user, [name]: value });
+        setUser((prevUser) => ({ ...prevUser, [name]: value }));
       }
       return; // ไม่ต้องให้โค้ดส่วนอื่นทำงาน
     }
 
-
     // เงื่อนไขสำหรับอีเมล (ห้ามภาษาไทย)
-    if (name === 'email') {
+    if (name === "email") {
       const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailPattern.test(value)) {
-        return;
+        return; // หยุดการเปลี่ยนแปลงหากไม่ใช่อีเมลที่ถูกต้อง
       }
     }
 
-    setUser({ ...user, [name]: value });
+    // อัปเดตค่าใน state สำหรับฟิลด์อื่นๆ
+    setUser((prevUser) => ({ ...prevUser, [name]: value }));
   }
 
   const handleSubmit = (e) => {
@@ -106,8 +107,9 @@ const UserEdit = () => {
       return;
     }
 
+    const userToSubmit = { ...user, JDate: formatDateForBackend(user.JDate) }; // แปลงฟอร์แมตวันที่
     axios
-      .put(`https://localhost:7039/api/Admin/Users/${UserID}`, user)
+      .put(`https://localhost:7039/api/Admin/Users/${UserID}`, userToSubmit)
       .then(() => {
         setModalMessage("แก้ไขข้อมูลสำเร็จ");
         setShowModal(true);
@@ -119,6 +121,19 @@ const UserEdit = () => {
       });
   };
 
+  // ฟังก์ชันแปลงฟอร์แมตวันที่
+  const formatDateForDisplay = (date) => {
+    if (!date) return ""; // ถ้าไม่มีค่าให้คืนค่าว่าง
+    const [year, month, day] = date.split("-");
+    return `${year}-${month}-${day}`; // ฟอร์แมตที่รองรับ input type="date"
+  };
+  
+  const formatDateForBackend = (date) => {
+    if (!date) return ""; // ถ้าไม่มีค่าให้คืนค่าว่าง
+    const [year, month, day] = date.split("-");
+    return `${year}-${month}-${day}`; // ฟอร์แมต YYYY-MM-DD
+  };
+  
   const closeModal = () => {
     setShowModal(false);
     if (modalMessage === "แก้ไขข้อมูลสำเร็จ") {
@@ -335,9 +350,6 @@ const UserEdit = () => {
             <li><Link to="/AdminDashboard" className="hover:bg-green-100 hover:text-black font-FontNoto font-bold">Dashboard</Link></li>
             <li><Link to="/LeaveGraph" className="hover:bg-green-100 font-FontNoto font-bold">สถิติการลาพนักงาน</Link></li>
             <li><NavLink to="/UserList" className={({ isActive }) => isActive ? "hover:bg-gray-300 hover:text-black font-FontNoto font-bold bg-gray-200" : "hover:bg-yellow-100 hover:text-black font-FontNoto font-bold"}>ข้อมูลพนักงาน</NavLink></li>
-            <li><Link to="/FileList" className="hover:bg-orange-100 hover:text-black font-FontNoto font-bold">จัดการเอกสาร</Link></li>
-            <li><Link to="/WorkExperienceList" className="hover:bg-yellow-100 hover:text-black font-FontNoto font-bold">ประสบการณ์ทำงาน</Link></li>
-            <li><Link to="/EducationList" className="hover:bg-purple-100 hover:text-black font-FontNoto font-bold">การศึกษา</Link></li>
             <li><Link to="/AdminLogout" className="hover:bg-error hover:text-white font-FontNoto font-bold">ออกจากระบบ</Link></li>
           </ul>
         </div>
@@ -454,6 +466,42 @@ const UserEdit = () => {
                     className="input input-bordered font-FontNoto"
                     required
                   />
+                </div>
+              </div>
+              <div className="flex gap-4 mb-4">
+                <div className="flex-1 form-control">
+                  <label className="label">
+                    <span className="label-text font-FontNoto">วันที่เริ่มงาน</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="JDate"
+                    placeholder="วันที่เริ่มงาน"
+                    value={user.JDate}
+                    onChange={handleChange}
+                    className="input input-bordered font-FontNoto w-full text-black"
+                    required
+                    style={{
+                      colorScheme: "light", // บังคับไอคอนให้ใช้โหมดสว่าง
+                    }}
+                  />
+                </div>
+                {/* ตำแหน่ง */}
+                <div className="flex-1 form-control">
+                  <label className="label">
+                    <span className="label-text font-FontNoto">เพศ</span>
+                  </label>
+                  <select
+                    name="gender"
+                    value={user.gender}
+                    onChange={handleChange}
+                    className="select select-bordered font-FontNoto w-full"
+                    required
+                  >
+                    <option className="font-FontNoto" value="" disabled>เลือกเพศ</option>
+                    <option className="font-FontNoto" value="Male">ชาย</option>
+                    <option className="font-FontNoto" value="Female">หญิง</option>
+                  </select>
                 </div>
               </div>
               {/* ปุ่มบันทึก */}

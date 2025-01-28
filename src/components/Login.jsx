@@ -125,7 +125,7 @@ const Login = ({ setIsLoggedIn }) => {
                                 )}
                             </button>
                         </div>
-                        {error && <div className="text-red-400 mt-4 text-center">{error}</div>}
+                        {error && <div className="text-red-400 mt-4 text-center font-FontNoto">{error}</div>}
                         <div className="flex justify-center items-center mt-6 font-FontNoto">
                             <button
                                 type="submit"

@@ -16,6 +16,15 @@ const roleMapping = {
   BA: "นักวิเคราะห์ธุรกิจ",
   Employee: "พนักงาน",
 };
+const levelLabels = {
+  Primary: "ประถมศึกษา",
+  Secondary: "มัธยมศึกษา",
+  Voc: "ประกาศนียบัตรวิชาชีพ (ปวช.)",
+  Dip: "ประกาศนียบัตรวิชาชีพชั้นสูง (ปวส.)",
+  Bachelor: "ปริญญาตรี",
+  Master: "ปริญญาโท",
+  Doctorate: "ปริญญาเอก",
+};
 // ฟังก์ชันแปลงวันที่ให้เป็นรูปแบบ DD-MM-YYYY
 const formatDateForDisplay = (date) => {
   if (!date) return "-";
@@ -33,6 +42,8 @@ const UserDetails = () => {
   const [user, setUser] = useState(null);
   const [educations, setEducations] = useState([]);
   const [workExperiences, setWorkExperiences] = useState([]);
+  const [modalExperienceID, setModalExperienceID] = useState(null); // สถานะสำหรับเก็บ ID ของประสบการณ์ที่ต้องการลบ
+  const [modalEducationID, setModalEducationID] = useState(null); // สถานะสำหรับเก็บ ID ของการศึกษาที่ต้องการลบ
   const [loading, setLoading] = useState(true);
   const [profilePic, setProfilePic] = useState(""); // รูปโปรไฟล์
   const [adminName, setAdminName] = useState(""); // ชื่อจริงของแอดมิน
@@ -98,7 +109,48 @@ const UserDetails = () => {
 
     fetchAdminInfo();
   }, []);
+  // ฟังก์ชันลบข้อมูลประสบการณ์ทำงาน
+  const handleDelete = () => {
+    if (modalExperienceID) {
+      axios
+        .delete(`https://localhost:7039/api/Admin/WorkExperiences/${modalExperienceID}`)
+        .then(() => {
+          setWorkExperiences(workExperiences.filter((exp) => exp.experienceID !== modalExperienceID));
+          setModalExperienceID(null); // ปิดโมเดล
+        })
+        .catch((error) => {
+          console.error("เกิดข้อผิดพลาดในการลบข้อมูล:", error.response || error);
+          alert(error.response?.data?.message || "เกิดข้อผิดพลาด");
+          setModalExperienceID(null); // ปิดโมเดล
+        });
+    }
+  };
+  // ฟังก์ชันแก้ไขข้อมูลประสบการณ์ทำงาน
+  const handleEdit = (id) => {
+    navigate(`/work-experience/edit/${id}`);
+  };
 
+  // ฟังก์ชันลบข้อมูลการศึกษา
+  const handleDelete1 = () => {
+    if (modalEducationID) {
+      axios
+        .delete(`https://localhost:7039/api/Admin/Educations/${modalEducationID}`)
+        .then(() => {
+          setEducations(educations.filter((edu) => edu.educationID !== modalEducationID));
+          setModalEducationID(null); // ปิดโมเดล
+        })
+        .catch((error) => {
+          console.error("เกิดข้อผิดพลาดในการลบข้อมูล:", error.response || error);
+          alert(error.response?.data?.message || "เกิดข้อผิดพลาด");
+          setModalEducationID(null); // ปิดโมเดล
+        });
+    }
+  };
+
+  // ฟังก์ชันแก้ไขข้อมูลการศึกษา
+  const handleEdit1 = (id) => {
+    navigate(`/educations/edit/${id}`);
+  };
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -302,123 +354,205 @@ const UserDetails = () => {
 
         {/* Content */}
         <div className="flex-1 p-20 bg-white shadow-lg rounded-lg ml-1">
-          <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6">
+          <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
             <h1 className="text-2xl font-bold text-center mb-4 font-FontNoto">รายละเอียดผู้ใช้งาน</h1>
 
             <div className="flex justify-center mb-6">
               <img
                 src={profileImageUrl || "/placeholder.jpg"}
-                alt="โปรไฟล์"
                 className="w-32 h-32 rounded-full object-cover border-4 border-yellow-400"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4 ">
-              <div>
-                <p className="text-lg font-semibold font-FontNoto">ชื่อ:</p>
-                <p className="font-FontNoto">{user.firstName}</p>
-              </div>
-              <div>
-                <p className="text-lg font-semibold font-FontNoto">นามสกุล:</p>
-                <p className="font-FontNoto">{user.lastName}</p>
-              </div>
-              <div>
-                <p className="text-lg font-semibold font-FontNoto">อีเมล:</p>
-                <p className="font-FontNoto">{user.email}</p>
-              </div>
-              <div>
-                <p className="text-lg font-semibold font-FontNoto">เบอร์โทรศัพท์:</p>
-                <p className="font-FontNoto">{user.contact}</p>
-              </div>
-              <div>
-                <p className="text-lg font-semibold font-FontNoto">แผนก:</p>
-                <p className="font-FontNoto">{roleMapping[user.role]}</p>
-              </div>
-              <div>
-                <p className="text-lg font-semibold font-FontNoto">ตำแหน่ง:</p>
-                <p className="font-FontNoto">{user.designation}</p>
-              </div>
-              <div>
-                <p className="text-lg font-semibold font-FontNoto">วันที่เริ่มงาน:</p>
-                <p className="font-FontNoto">{formatDateForDisplay(user.jDate)}</p> {/* ใช้ฟังก์ชัน formatDateForDisplay กับ user.jDate */}
-              </div>
-              <div>
-                <p className="text-lg font-semibold font-FontNoto">เพศ:</p>
-                <p className="font-FontNoto">{sexLabels[user.gender] || "ไม่ระบุ"}</p>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-between">
+            <div className="mt-6 flex justify-between p-2">
+              <Link to={`/users/edit/${user.userID}`} className="btn btn-outline btn-warning font-FontNoto">
+                แก้ไขข้อมูล
+              </Link>
               <button
                 onClick={() => navigate("/UserList")}
                 className="btn btn-outline btn-error font-FontNoto"
               >
                 กลับไปยังรายการ
               </button>
-              <Link to={`/users/edit/${user.userID}`} className="btn btn-outline btn-warning font-FontNoto">
-                แก้ไขข้อมูล
+            </div>
+            <table className="table-auto w-full border-collapse border border-gray-300 text-left">
+              <thead>
+                <tr className="bg-gray-100 text-center">
+                  <th className="border px-4 py-2 font-semibold font-FontNoto">ชื่อ-นามสกุล</th>
+                  <th className="border px-4 py-2 font-semibold font-FontNoto">อีเมล</th>
+                  <th className="border px-4 py-2 font-semibold font-FontNoto">เบอร์โทรศัพท์</th>
+                  <th className="border px-4 py-2 font-semibold font-FontNoto">แผนก</th>
+                  <th className="border px-4 py-2 font-semibold font-FontNoto">ตำแหน่ง</th>
+                  <th className="border px-4 py-2 font-semibold font-FontNoto">วันที่เริ่มงาน</th>
+                  <th className="border px-4 py-2 font-semibold font-FontNoto">เพศ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="text-center">
+                  <td className="border px-4 py-2 font-FontNoto">{user.firstName} {user.lastName}</td>
+                  <td className="border px-4 py-2 font-FontNoto">{user.email}</td>
+                  <td className="border px-4 py-2 font-FontNoto">{user.contact}</td>
+                  <td className="border px-4 py-2 font-FontNoto">{roleMapping[user.role]}</td>
+                  <td className="border px-4 py-2 font-FontNoto">{user.designation}</td>
+                  <td className="border px-4 py-2 font-FontNoto">{formatDateForDisplay(user.jDate)}</td>
+                  <td className="border px-4 py-2 font-FontNoto">{sexLabels[user.gender] || "ไม่ระบุ"}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="p-2"></div>
+          <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <div className="flex justify-between items-center mt-6">
+              <h2 className="text-xl font-bold mt-6 font-FontNoto">ประสบการณ์ทำงาน</h2>
+              <Link
+                to="/experiences/create"
+                className="btn btn-outline btn-primary font-FontNoto"
+              >
+                เพิ่มข้อมูลประสบการณ์
               </Link>
             </div>
+            <table className="table-auto w-full border-collapse border border-gray-300 mt-4">
+              <thead>
+                <tr className="bg-gray-100 text-center">
+                  <th className="border px-4 py-2 font-FontNoto">บริษัท</th>
+                  <th className="border px-4 py-2 font-FontNoto">ตำแหน่ง</th>
+                  <th className="border px-4 py-2 font-FontNoto">เงินเดือน</th>
+                  <th className="border px-4 py-2 font-FontNoto">ปีเริ่มต้น</th>
+                  <th className="border px-4 py-2 font-FontNoto">ปีสิ้นสุด</th>
+                  <th className="border px-4 py-2 font-FontNoto">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workExperiences.length > 0 ? (
+                  workExperiences.map((experience) => (
+                    <tr key={experience.experienceID} className="hover:bg-gray-50">
+                      <td className="border px-4 py-2 font-FontNoto">{experience.companyName}</td>
+                      <td className="border px-4 py-2 font-FontNoto">{experience.jobTitle}</td>
+                      <td className="border px-4 py-2 text-center font-FontNoto">{experience.salary}</td>
+                      <td className="border px-4 py-2 text-center font-FontNoto">{experience.startDate}</td>
+                      <td className="border px-4 py-2 text-center font-FontNoto">{experience.endDate}</td>
+                      <td className="border px-4 py-2 space-x-2 text-center">
+                        <button
+                          className="btn btn-outline btn-warning btn-sm font-FontNoto"
+                          onClick={() => handleEdit(experience.experienceID)}
+                        >
+                          แก้ไข
+                        </button>
+                        <button
+                          className="btn btn-outline btn-error btn-sm font-FontNoto"
+                          onClick={() => setModalExperienceID(experience.experienceID)} // เปิดโมเดล
+                        >
+                          ลบ
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="border px-4 py-2 text-center font-FontNoto" colSpan={5}>ไม่พบข้อมูลประสบการณ์ทำงาน</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-
-          <h2 className="text-xl font-bold mt-6">ประสบการณ์ทำงาน</h2>
-          <table className="table-auto w-full border-collapse border border-gray-300 mt-4">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border px-4 py-2 font-FontNoto">บริษัท</th>
-                <th className="border px-4 py-2 font-FontNoto">ตำแหน่ง</th>
-                <th className="border px-4 py-2 font-FontNoto">เงินเดือน</th>
-                <th className="border px-4 py-2 font-FontNoto">ปีเริ่มต้น</th>
-                <th className="border px-4 py-2 font-FontNoto">ปีสิ้นสุด</th>
-              </tr>
-            </thead>
-            <tbody>
-              {workExperiences.length > 0 ? (
-                workExperiences.map((experience) => (
-                  <tr key={experience.experienceID} className="hover:bg-gray-50">
-                    <td className="border px-4 py-2">{experience.companyName}</td>
-                    <td className="border px-4 py-2">{experience.jobTitle}</td>
-                    <td className="border px-4 py-2">{experience.salary}</td>
-                    <td className="border px-4 py-2 text-center">{experience.startDate}</td>
-                    <td className="border px-4 py-2 text-center">{experience.endDate}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td className="border px-4 py-2 text-center" colSpan={5}>ไม่พบข้อมูลประสบการณ์ทำงาน</td>
+          {modalExperienceID && (
+            <dialog open className="modal">
+              <div className="modal-box">
+                <h3 className="font-bold text-lg text-left font-FontNoto">คุณแน่ใจหรือไม่?</h3>
+                <p className="py-4 text-left font-FontNoto">การลบข้อมูลประสบการณ์ทำงานนี้จะไม่สามารถกู้คืนได้!</p>
+                <div className="modal-action">
+                  <button
+                    className="btn btn-warning font-FontNoto"
+                    onClick={() => setModalExperienceID(null)} // ปิดโมเดล
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    className="btn btn-success font-FontNoto"
+                    onClick={handleDelete} // ลบข้อมูล
+                  >
+                    ยืนยัน
+                  </button>
+                </div>
+              </div>
+            </dialog>
+          )}
+          <div className="p-2"></div>
+          <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <div className="flex justify-between items-center mt-6">
+              <h2 className="text-xl font-bold mt-6 font-FontNoto">ประวัติการศึกษา</h2>
+              <Link
+                to="/educations/create"
+                className="btn btn-outline btn-primary font-FontNoto"
+              >
+                เพิ่มข้อมูลการศึกษา
+              </Link>
+            </div>
+            <table className="table-auto w-full border-collapse border border-gray-300 mt-4">
+              <thead>
+                <tr className="bg-gray-100 text-center">
+                  <th className="border px-4 py-2 font-FontNoto">ระดับการศึกษา</th>
+                  <th className="border px-4 py-2 font-FontNoto">สถาบัน</th>
+                  <th className="border px-4 py-2 font-FontNoto">สาขาวิชา</th>
+                  <th className="border px-4 py-2 font-FontNoto">ปีที่ศึกษา</th>
+                  <th className="border px-4 py-2 font-FontNoto">(GPA)</th>
+                  <th className="border px-4 py-2 font-FontNoto">จัดการ</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-          <h2 className="text-xl font-bold mt-6">ประวัติการศึกษา</h2>
-          <table className="table-auto w-full border-collapse border border-gray-300 mt-4">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border px-4 py-2">ระดับการศึกษา</th>
-                <th className="border px-4 py-2">สถาบัน</th>
-                <th className="border px-4 py-2">สาขาวิชา</th>
-                <th className="border px-4 py-2">ปีที่ศึกษา</th>
-                <th className="border px-4 py-2">(GPA)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {educations.length > 0 ? (
-                educations.map((education) => (
-                  <tr key={education.educationID} className="hover:bg-gray-50">
-                    <td className="border px-4 py-2">{education.level}</td>
-                    <td className="border px-4 py-2">{education.institute}</td>
-                    <td className="border px-4 py-2">{education.fieldOfStudy}</td>
-                    <td className="border px-4 py-2 text-center">{education.year}</td>
-                    <td className="border px-4 py-2 text-center">{education.gpa}</td>
+              </thead>
+              <tbody>
+                {educations.length > 0 ? (
+                  educations.map((education) => (
+                    <tr key={education.educationID} className="hover:bg-gray-50">
+                      <td className="border px-4 py-2 font-FontNoto">{levelLabels[education.level]}</td>
+                      <td className="border px-4 py-2 font-FontNoto">{education.institute}</td>
+                      <td className="border px-4 py-2 font-FontNoto">{education.fieldOfStudy}</td>
+                      <td className="border px-4 py-2 text-center font-FontNoto">{education.year}</td>
+                      <td className="border px-4 py-2 text-center font-FontNoto">{education.gpa}</td>
+                      <td className="border px-4 py-2 space-x-2 text-center">
+                        <button
+                          className="btn btn-outline btn-warning btn-sm font-FontNoto"
+                          onClick={() => handleEdit1(education.educationID)}
+                        >
+                          แก้ไข
+                        </button>
+                        <button
+                          className="btn btn-outline btn-error btn-sm font-FontNoto"
+                          onClick={() => setModalEducationID(education.educationID)}
+                        >
+                          ลบ
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="border px-4 py-2 text-center font-FontNoto" colSpan={5}>ไม่พบข้อมูลการศึกษา</td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td className="border px-4 py-2 text-center" colSpan={5}>ไม่พบข้อมูลการศึกษา</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          
+                )}
+              </tbody>
+            </table>
+          </div>
+          {modalEducationID && (
+            <dialog open className="modal">
+              <div className="modal-box">
+                <h3 className="font-bold text-lg text-left font-FontNoto">คุณแน่ใจหรือไม่?</h3>
+                <p className="py-4 text-left font-FontNoto">การลบข้อมูลการศึกษานี้จะไม่สามารถกู้คืนได้!</p>
+                <div className="modal-action">
+                  <button
+                    className="btn btn-warning font-FontNoto"
+                    onClick={() => setModalEducationID(null)}
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    className="btn btn-success font-FontNoto"
+                    onClick={handleDelete1}
+                  >
+                    ยืนยัน
+                  </button>
+                </div>
+              </div>
+            </dialog>
+          )}
         </div>
       </div>
     </div>

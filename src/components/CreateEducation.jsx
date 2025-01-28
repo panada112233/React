@@ -51,10 +51,6 @@ function CreateEducation() {
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        // ตรวจสอบว่า institute และ fieldOfStudy ต้องเป็นภาษาไทยเท่านั้น
-        if ((name === "institute" || name === "fieldOfStudy") && !/^[ก-๙\s]*$/.test(value)) {
-            return; // หยุดการอัปเดต state ถ้าไม่ใช่ภาษาไทย
-        }
         // ตรวจสอบว่า year มีเฉพาะตัวเลขและเครื่องหมายขีดตามรูปแบบ
         if (name === "year" && !/^\d{0,4}(-\d{0,4})?$/.test(value)) {
             return; // หยุดการอัปเดต state ถ้าค่าไม่ตรงรูปแบบที่กำหนด
@@ -76,39 +72,43 @@ function CreateEducation() {
     };
     const handleCloseModal = () => {
         setIsModalOpen(false); // ปิด Modal
-        navigate("/EducationList"); // เด้งกลับไปหน้า WorkExperienceList
+        navigate(`/users/${selectedUserID}`); // เด้งไปหน้า /users/:UserID
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation checks
+        // ตรวจสอบข้อมูล Validation
         if (!selectedUserID) {
             setErrorMessage("กรุณาเลือกพนักงานก่อนบันทึกข้อมูลการศึกษา");
             return;
         }
-        const regex = /^\d{4}-\d{4}$/;
-        if (newEducation.year && !regex.test(newEducation.year)) {
+
+        const yearRegex = /^\d{4}-\d{4}$/; // รูปแบบปี เช่น 2567-2568
+        if (newEducation.year && !yearRegex.test(newEducation.year)) {
             setErrorMessage("กรุณากรอกปีในรูปแบบ 2567-2568");
             return;
         }
+
         if (newEducation.gpa < 0 || newEducation.gpa > 4) {
             setErrorMessage("กรุณากรอกเกรดเฉลี่ยสะสมให้ถูกต้อง (0.00 - 4.00)");
             return;
         }
-        // Clear error message if all validations pass
+
+        // ล้างข้อความข้อผิดพลาดหากการตรวจสอบผ่าน
         setErrorMessage("");
 
         try {
+            // ส่งข้อมูลการศึกษาไปยัง API
             await axios.post("https://localhost:7039/api/Admin/educations", {
                 ...newEducation,
                 userID: selectedUserID,
             });
 
-            // Open the modal upon success
+            // แสดง Modal เมื่อเพิ่มข้อมูลสำเร็จ
             setIsModalOpen(true);
 
-            // Reset the form fields after successful submission
+            // ล้างฟิลด์ข้อมูลหลังการบันทึกสำเร็จ
             setNewEducation({
                 level: "",
                 institute: "",
@@ -123,23 +123,23 @@ function CreateEducation() {
     };
     useEffect(() => {
         const fetchAdminInfo = async () => {
-          try {
-            const response = await GetUser(); // ใช้ฟังก์ชันจาก apiservice
-            setAdminName(response.name || "ไม่มีชื่อแอดมิน");
-            setProfilePic(
-              response.profilePictureUrl
-                ? `http://localhost${response.profilePictureUrl}`
-                : "/uploads/admin/default-profile.jpg"
-            );
-          } catch (error) {
-            console.error("Error fetching admin data:", error);
-            setAdminName("ไม่สามารถดึงข้อมูลได้");
-          }
+            try {
+                const response = await GetUser(); // ใช้ฟังก์ชันจาก apiservice
+                setAdminName(response.name || "ไม่มีชื่อแอดมิน");
+                setProfilePic(
+                    response.profilePictureUrl
+                        ? `http://localhost${response.profilePictureUrl}`
+                        : "/uploads/admin/default-profile.jpg"
+                );
+            } catch (error) {
+                console.error("Error fetching admin data:", error);
+                setAdminName("ไม่สามารถดึงข้อมูลได้");
+            }
         };
-      
+
         fetchAdminInfo();
-      }, []);
-      
+    }, []);
+
 
     const handleProfilePicChange = (event) => {
         const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -154,86 +154,86 @@ function CreateEducation() {
     };
     const handleNameUpdate = async () => {
         if (!adminName) {
-          console.error("Admin name is empty, cannot update.");
-          setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
-          return;
+            console.error("Admin name is empty, cannot update.");
+            setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
+            return;
         }
-      
+
         // ดึงข้อมูล User ID จาก localStorage
         const userInfo = JSON.parse(localStorage.getItem("userinfo"));
         if (!userInfo || !userInfo.userid) {
-          console.error("User ID is missing in localStorage.");
-          setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
-          return;
+            console.error("User ID is missing in localStorage.");
+            setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
+            return;
         }
-      
+
         const formData = new FormData();
         formData.append("name", adminName);
         formData.append("id", userInfo.userid);
-      
+
         try {
-          const response = await axios.post(
-            "https://localhost:7039/api/Admin/UpdateAdminInfo",
-            formData,
-            { headers: { "Content-Type": "multipart/form-data" } }
-          );
-          setIsEditingName(false);
-          setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
+            const response = await axios.post(
+                "https://localhost:7039/api/Admin/UpdateAdminInfo",
+                formData,
+                { headers: { "Content-Type": "multipart/form-data" } }
+            );
+            setIsEditingName(false);
+            setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
         } catch (error) {
-          console.error("Error updating admin name:", error.response?.data || error);
-          setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
+            console.error("Error updating admin name:", error.response?.data || error);
+            setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
         }
-      };
-      
+    };
+
 
     // อัปโหลดรูปโปรไฟล์ใหม่
     const handleUpload = async () => {
         if (!selectedFile) {
-          setUploadMessage(
-            <p className="font-FontNoto text-red-500">กรุณาเลือกไฟล์ก่อนอัปโหลด</p>
-          );
-          return;
+            setUploadMessage(
+                <p className="font-FontNoto text-red-500">กรุณาเลือกไฟล์ก่อนอัปโหลด</p>
+            );
+            return;
         }
-    
+
         var userinfolocalStorage = localStorage.getItem('userinfo')
         const objUser = JSON.parse(userinfolocalStorage)
         console.log(objUser.userid)
-    
-    
+
+
         const formData = new FormData();
         formData.append("profilePictures", selectedFile); // ส่งเฉพาะรูปภาพ
         formData.append("id", objUser.userid);
         console.log(formData)
         try {
-          const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
-            {
-              headers: { "Content-Type": "multipart/form-data" },
+            const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                }
+            );
+
+            if (response.data && response.data.profilePictureUrl) {
+                const profilePictureUrl = `http://localhost/${response.data.profilePictureUrl}`;
+                setProfilePic(profilePictureUrl);
+                setUploadMessage(
+                    <p className="font-FontNoto text-green-500">อัปโหลดสำเร็จ!</p>
+                );
+            } else {
+                setUploadMessage(
+                    <p className="font-FontNoto text-red-500">
+                        อัปโหลดสำเร็จ แต่ไม่ได้รับ URL ของรูปโปรไฟล์
+                    </p>
+                );
             }
-          );
-    
-          if (response.data && response.data.profilePictureUrl) {
-            const profilePictureUrl = `http://localhost/${response.data.profilePictureUrl}`;
-            setProfilePic(profilePictureUrl);
-            setUploadMessage(
-              <p className="font-FontNoto text-green-500">อัปโหลดสำเร็จ!</p>
-            );
-          } else {
-            setUploadMessage(
-              <p className="font-FontNoto text-red-500">
-                อัปโหลดสำเร็จ แต่ไม่ได้รับ URL ของรูปโปรไฟล์
-              </p>
-            );
-          }
         } catch (error) {
-          console.error("Error uploading profile picture:", error);
-    
-          const errorMessage =
-            error.response?.data?.Message || "เกิดข้อผิดพลาดในการอัปโหลด";
-          setUploadMessage(
-            <p className="font-FontNoto text-red-500">{errorMessage}</p>
-          );
+            console.error("Error uploading profile picture:", error);
+
+            const errorMessage =
+                error.response?.data?.Message || "เกิดข้อผิดพลาดในการอัปโหลด";
+            setUploadMessage(
+                <p className="font-FontNoto text-red-500">{errorMessage}</p>
+            );
         }
-      };
+    };
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -354,7 +354,15 @@ function CreateEducation() {
                 {/* Main Content */}
                 <div className="flex-1 p-20 bg-white shadow-lg rounded-lg ml-1">
                     <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-4">
-                        <h2 className="text-2xl font-bold text-center mb-4 font-FontNoto">เพิ่มการศึกษา</h2>
+                        <div className="mt-6 flex justify-between ">
+                            <h2 className="text-2xl font-bold mb-4 font-FontNoto">เพิ่มการศึกษา</h2>
+                            <button
+                                onClick={() => navigate("/UserList")}
+                                className="btn btn-outline btn-error font-FontNoto"
+                            >
+                                กลับไปยังรายการ
+                            </button>
+                        </div>
                         {errorMessage && (
                             <div className="alert alert-error shadow-lg mb-4">
                                 <div>
