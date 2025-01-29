@@ -16,7 +16,7 @@ const UserList = () => {
   const [selectedFile, setSelectedFile] = useState(null); // ไฟล์ที่เลือก
   const [uploadMessage, setUploadMessage] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   useEffect(() => {
     axios
@@ -53,17 +53,12 @@ const UserList = () => {
   };
 
   const handleSearch = () => {
-    if (!/^[ก-๙\s]*$/.test(searchTerm)) {
-      alert("กรุณาป้อนเฉพาะตัวอักษรภาษาไทย");
-      return;
-    }
-
     const results = users.filter((user) =>
-      user.firstName.includes(searchTerm) || user.lastName.includes(searchTerm)
+      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(results);
   };
-
 
   const handleViewDetails = (user) => {
     navigate(`/users/${user.userID}`);
@@ -84,10 +79,10 @@ const UserList = () => {
         setAdminName("ไม่สามารถดึงข้อมูลได้");
       }
     };
-  
+
     fetchAdminInfo();
   }, []);
-  
+
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -107,7 +102,7 @@ const UserList = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
       return;
     }
-  
+
     // ดึงข้อมูล User ID จาก localStorage
     const userInfo = JSON.parse(localStorage.getItem("userinfo"));
     if (!userInfo || !userInfo.userid) {
@@ -115,11 +110,11 @@ const UserList = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("name", adminName);
     formData.append("id", userInfo.userid);
-  
+
     try {
       const response = await axios.post(
         "https://localhost:7039/api/Admin/UpdateAdminInfo",
@@ -133,7 +128,7 @@ const UserList = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
   };
-  
+
 
   // อัปโหลดรูปโปรไฟล์ใหม่
   const handleUpload = async () => {
@@ -299,13 +294,9 @@ const UserList = () => {
               placeholder="ค้นหาชื่อ-นามสกุล..."
               style={{ width: "200px" }}
               value={searchTerm}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (/^[ก-๙\s]*$/.test(value)) {
-                  setSearchTerm(value); // อัปเดตเฉพาะค่าที่เป็นภาษาไทย
-                }
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)} // ✅ อัปเดตค่าโดยไม่จำกัดภาษา
             />
+
             <button className="btn btn-outline btn-success font-FontNoto" onClick={handleSearch}>
               ค้นหา
             </button>

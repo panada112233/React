@@ -14,8 +14,6 @@ import TrendStatistics from './components/TrendStatistics';
 import LeaveStatistics from './components/LeaveStatistics';
 import Allemployee from './components/Allemployee';
 import Alldocuments from './components/Alldocuments';
-import Allexperiences from './components/Allexperiences';
-import Alleducation from './components/Alleducation';
 import ManagerView from './components/ManagerView';
 import HRView from './components/HRView';
 import EmployeeView from './components/EmployeeView';
@@ -92,8 +90,6 @@ function App() {
               <Route path="LeaveStatistics" element={<LeaveStatistics />} />
               <Route path="Allemployee" element={<Allemployee />} />
               <Route path="Alldocuments" element={<Alldocuments />} />
-              <Route path="Allexperiences" element={<Allexperiences />} />
-              <Route path="Alleducation" element={<Alleducation />} />
               <Route path="ManagerView" element={<ManagerView />} />
               <Route path="HRView" element={<HRView />} />
               <Route path="EmployeeView" element={<EmployeeView />} />

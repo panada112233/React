@@ -57,21 +57,15 @@ const Allemployee = () => {
 
     const handleViewDetails = (user) => {
         navigate(`/EmpHome/Alldocuments`, { state: { user } }); // ส่งข้อมูล user ไปยังหน้าถัดไป
-        // navigate(`/users/${user.userID}`);
     };
 
     const handleSearch = () => {
-        if (!/^[ก-๙\s]*$/.test(searchTerm)) {
-            alert("กรุณาป้อนเฉพาะตัวอักษรภาษาไทย");
-            return;
-        }
-
         const results = users.filter((user) =>
-            user.firstName.includes(searchTerm) || user.lastName.includes(searchTerm)
+            user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.lastName.toLowerCase().includes(searchTerm.toLowerCase())
         );
         setFilteredUsers(results);
     };
-
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -81,16 +75,7 @@ const Allemployee = () => {
                     <Link to="/EmpHome/Allemployee" className="btn btn-outline font-FontNoto mt-2" style={{ marginRight: '10px' }}>
                         พนักงานในระบบ
                     </Link>
-                    <Link to="/EmpHome/Alldocuments" className="btn btn-outline btn-success font-FontNoto mt-2" style={{ marginRight: '10px' }}>
-                        เอกสารพนักงาน
-                    </Link>
-                    <Link to="/EmpHome/Allexperiences" className="btn btn-outline btn-info font-FontNoto mt-2" style={{ marginRight: '10px' }}>
-                        ประสบการณ์ทำงาน
-                    </Link>
-                    <Link to="/EmpHome/Alleducation" className="btn btn-outline btn-primary font-FontNoto mt-2" style={{ marginRight: '10px' }}>
-                        การศึกษาพนักงาน
-                    </Link>
-                    <Link to="/EmpHome/Allcreate" className="btn btn-outline btn-secondary font-FontNoto mt-2">
+                    <Link to="/EmpHome/Allcreate" className="btn btn-outline btn-primary font-FontNoto mt-2">
                         เพิ่มพนักงานใหม่
                     </Link>
                     <div className="mb-6"></div>
@@ -101,15 +86,10 @@ const Allemployee = () => {
                         <input
                             type="text"
                             className="input input-bordered font-FontNoto"
-                            placeholder="ค้นหาชื่อ-นามสกุล..."
-                            style={{ width: "200px" }}
+                            placeholder="ค้นหาชื่อหรือสกุล..."
+                            style={{ width: "250px" }}
                             value={searchTerm}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                if (/^[ก-๙\s]*$/.test(value)) {
-                                    setSearchTerm(value); // อัปเดตเฉพาะค่าที่เป็นภาษาไทย
-                                }
-                            }}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                         <button className="btn btn-outline btn-success font-FontNoto" onClick={handleSearch}>
                             ค้นหา
@@ -163,11 +143,11 @@ const Allemployee = () => {
                                                         <td className="border px-4 py-2 font-FontNoto text-center">{sexLabels[user.gender]}</td>
                                                         <td className="border px-4 py-2 font-FontNoto text-center">
                                                             <button
-                                                            className="btn btn-outline btn-info btn-sm font-FontNoto"
-                                                            onClick={() => handleViewDetails(user)}
-                                                        >
-                                                            ดูข้อมูล
-                                                        </button></td>
+                                                                className="btn btn-outline btn-info btn-sm font-FontNoto"
+                                                                onClick={() => handleViewDetails(user)}
+                                                            >
+                                                                ดูเพิ่มเติม
+                                                            </button></td>
                                                     </tr>
                                                 );
                                             })
