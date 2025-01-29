@@ -486,7 +486,7 @@ function Profile() {
                       onChange={handleChange}
                       style={{
                         colorScheme: "light", // บังคับไอคอนให้ใช้โหมดสว่าง
-                      }}
+                      }} 
                     />
 
                   </div>

@@ -2,10 +2,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import LeaveGraph from './components/LeaveGraph';
 import Login from './components/Login';
-import About from './components/About';
-import Register from './components/Register';
-import Emp_login from './components/Emp_login';
-import Admin_login from './components/Admin_login';
 import Navbars from './components/Navbars';
 import AdminRegistration from './components/AdminRegistration';
 import AdminManagement from './components/AdminManagement';
@@ -34,15 +30,9 @@ import Allcreate from './components/Allcreate';
 import AdminDashboard from "./components/AdminDashboard";
 import UserList from "./components/UserList";
 import UserDetails from "./components/UserDetails";
-import FileDetail from "./components/FileDetail";
-import WorkExperienceDetail from "./components/WorkExperienceDetail";
-import EducationDetail from "./components/EducationDetail";
 import UserEdit from "./components/UserEdit"; 
 import UserForm from "./components/UserForm";
-import WorkExperienceList from "./components/WorkExperienceList";
 import CreateWorkExperience from "./components/CreateWorkExperience";
-import EducationList from "./components/EducationList";
-import FileList from "./components/FileList";
 import AdminLogout from "./components/AdminLogout";
 import EditEducation from "./components/EditEducation";
 import EditWorkExperience from './components/EditWorkExperience';
@@ -68,10 +58,6 @@ function App() {
             <Route path="/" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
 
             {/* Routes อื่นๆ */}
-            <Route path="/About" element={<About />} />
-            <Route path="/Register" element={<Register />} />
-            <Route path="/Emp_login" element={<Emp_login setIsLoggedIn={setIsLoggedIn} />} />
-            <Route path="/Admin_login" element={<Admin_login setIsLoggedIn={setIsLoggedIn} />} />
             <Route path="/ForgotPassword" element={<ForgotPassword />} />
             <Route path="/ChangePassword" element={<ChangePassword />} />
 
@@ -105,22 +91,14 @@ function App() {
             <Route path="/UserList" element={<UserList />} />
             <Route path="/UserForm/create" element={<UserForm />} />
             <Route path="/UserForm/edit/:id" element={<UserForm />} />
-            <Route path="/WorkExperienceList" element={<WorkExperienceList />} />
-            <Route path="/EducationList" element={<EducationList />} />
             <Route path="/educations/create" element={<CreateEducation />} />
-            <Route path="/FileList" element={<FileList />} />
-            <Route path="/filedetail/:userID" element={<FileDetail />} />
-            <Route path="/FileDetail/:fileID" element={<FileDetail />} />
-            <Route path="/WorkExperienceDetail/:userID" element={<WorkExperienceDetail />} />
-            <Route path="/EducationDetail/:userID" element={<EducationDetail />} />
             <Route path="/AdminLogout" element={<AdminLogout setIsAdminLoggedIn={setIsLoggedIn} />} />
-            <Route path="/files" element={<FileList />} />
             <Route path="/experiences/create" element={<CreateWorkExperience />} />
             <Route path="/users/:UserID" element={<UserDetails />} />
             <Route path="/users/details/:UserID" element={<UserDetails />} />
             <Route path="/users/edit/:UserID" element={<UserEdit />} />
             <Route path="educations/edit/:id" element={<EditEducation />} />
-            <Route path="/work-experience/edit/:experienceID" element={<EditWorkExperience />} />
+            <Route path="/work-experience/edit/:experienceID/:userid" element={<EditWorkExperience />} />
             <Route path="/LeaveGraph" element={<LeaveGraph />} />
             <Route path="/AdminRegistration" element={<AdminRegistration />} />
             <Route path="/AdminManagement" element={<AdminManagement />} />

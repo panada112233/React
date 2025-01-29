@@ -44,11 +44,11 @@ const EditEducation = () => {
         setModalMessage("ไม่สามารถโหลดข้อมูลการศึกษาได้");
         setIsSuccess(false);
         document.getElementById("error_modal").showModal();
-        navigate(-1);
+        
       }
     };
     fetchEducation();
-  }, [id, navigate]);
+  }, [id]);
 
   // Save data function
   const handleSave = async (e) => {
@@ -321,7 +321,7 @@ const EditEducation = () => {
             <div className="mt-6 flex justify-between ">
               <h2 className="text-2xl font-bold text-black font-FontNoto">แก้ไขข้อมูลการศึกษา</h2>
               <button
-                onClick={() => navigate("/UserList")}
+                onClick={() => history.back()}
                 className="btn btn-outline btn-error font-FontNoto"
               >
                 กลับไปยังรายการ

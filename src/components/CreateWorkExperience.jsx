@@ -173,7 +173,11 @@ function CreateWorkExperience() {
 
     const handleCloseModal = () => {
         setIsModalOpen(false); // ปิด Modal
-        navigate(`/users/${selectedUserID}`); // เด้งไปหน้า /users/:UserID
+        console.log(selectedUserID)
+        if(selectedUserID != null && selectedUserID !== ""){
+            navigate(`/users/${selectedUserID}`);
+        }
+       //  // เด้งไปหน้า /users/:UserID
     };
 
     const handleSubmit = async (e) => {
@@ -203,7 +207,7 @@ function CreateWorkExperience() {
         }
 
         setErrors({}); // ล้างข้อผิดพลาดเมื่อไม่มีปัญหา
-
+        console.log(selectedUserID)
         try {
             const response = await axios.post("https://localhost:7039/api/Admin/WorkExperiences", {
                 userID: parseInt(selectedUserID),
@@ -223,7 +227,7 @@ function CreateWorkExperience() {
                 endDate: "",
                 salary: "",
             });
-            setSelectedUserID("");
+            
             setIsModalOpen(true); // เปิด Modal
         } catch (error) {
             console.error("เกิดข้อผิดพลาดในการเพิ่มข้อมูล:", error);
@@ -352,7 +356,7 @@ function CreateWorkExperience() {
                         <div className="mt-6 flex justify-between ">
                             <h2 className="text-2xl font-bold mb-4 font-FontNoto">เพิ่มประสบการณ์ทำงาน</h2>
                             <button
-                                onClick={() => navigate("/UserList")}
+                                onClick={() => history.back()}
                                 className="btn btn-outline btn-error font-FontNoto"
                             >
                                 กลับไปยังรายการ

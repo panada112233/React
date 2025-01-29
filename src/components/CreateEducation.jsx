@@ -72,7 +72,10 @@ function CreateEducation() {
     };
     const handleCloseModal = () => {
         setIsModalOpen(false); // ปิด Modal
-        navigate(`/users/${selectedUserID}`); // เด้งไปหน้า /users/:UserID
+        if(selectedUserID!== null && selectedUserID !== ''){
+            navigate(`/users/${selectedUserID}`); // เด้งไปหน้า /users/:UserID
+        }
+      
     };
 
     const handleSubmit = async (e) => {
@@ -357,7 +360,7 @@ function CreateEducation() {
                         <div className="mt-6 flex justify-between ">
                             <h2 className="text-2xl font-bold mb-4 font-FontNoto">เพิ่มการศึกษา</h2>
                             <button
-                                onClick={() => navigate("/UserList")}
+                                onClick={() => history.back()}
                                 className="btn btn-outline btn-error font-FontNoto"
                             >
                                 กลับไปยังรายการ

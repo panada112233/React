@@ -65,9 +65,11 @@ const UserDetails = () => {
       try {
         // ดึงข้อมูลผู้ใช้งาน
         const userResponse = await axios.get(`https://localhost:7039/api/Admin/Users/${UserID}`);
-        setUser(userResponse.data || null);
-
-        // ดึงข้อมูลการศึกษา
+        setUser(userResponse.data );
+      
+        const userdata = userResponse.data
+        
+                // ดึงข้อมูลการศึกษา
         const educationResponse = await axios.get("https://localhost:7039/api/Admin/Educations");
         const filteredEducations = educationResponse.data.filter(
           (education) => education.userID === parseInt(UserID, 10)
@@ -126,8 +128,9 @@ const UserDetails = () => {
     }
   };
   // ฟังก์ชันแก้ไขข้อมูลประสบการณ์ทำงาน
-  const handleEdit = (id) => {
-    navigate(`/work-experience/edit/${id}`);
+  const handleEdit = (exid) => {
+    console.log(UserID)
+   navigate(`/work-experience/edit/${exid}/${UserID}`);
   };
 
   // ฟังก์ชันลบข้อมูลการศึกษา
@@ -145,7 +148,7 @@ const UserDetails = () => {
           setModalEducationID(null); // ปิดโมเดล
         });
     }
-  };
+  }; 
 
   // ฟังก์ชันแก้ไขข้อมูลการศึกษา
   const handleEdit1 = (id) => {
@@ -393,6 +396,7 @@ const UserDetails = () => {
                   <td className="border px-4 py-2 font-FontNoto">{user.contact}</td>
                   <td className="border px-4 py-2 font-FontNoto">{roleMapping[user.role]}</td>
                   <td className="border px-4 py-2 font-FontNoto">{user.designation}</td>
+          
                   <td className="border px-4 py-2 font-FontNoto">{formatDateForDisplay(user.jDate)}</td>
                   <td className="border px-4 py-2 font-FontNoto">{sexLabels[user.gender] || "ไม่ระบุ"}</td>
                 </tr>

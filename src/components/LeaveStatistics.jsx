@@ -30,10 +30,12 @@ const LeaveStatistics = () => {
   const [categoryCounts, setCategoryCounts] = useState({});
 
   const categoryMapping = {
-    Identification: 'ลาพักร้อน',
-    WorkContract: 'ลากิจ',
     Certificate: 'ลาป่วย',
-  };
+    WorkContract: 'ลากิจส่วนตัว',
+    Identification: 'ลาพักร้อน',
+    Maternity: 'ลาคลอด',
+    Ordination: 'ลาบวช',
+};
 
   useEffect(() => {
     const fetchFileData = async () => {

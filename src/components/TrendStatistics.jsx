@@ -37,9 +37,12 @@ const TrendStatistics = () => {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
     const categoryMapping = {
-        Identification: 'ลาพักร้อน',
-        WorkContract: 'ใบลากิจ',
         Certificate: 'ใบลาป่วย',
+        WorkContract: 'ใบลากิจ',
+        Identification: 'ใบลาพักร้อน',
+        Maternity: 'ใบลาคลอด',
+        Ordination: 'ใบลาบวช',
+        Doc: 'เอกสารส่วนตัว',
         Others: 'อื่นๆ',
     };
 
@@ -51,7 +54,7 @@ const TrendStatistics = () => {
                     const category = categoryMapping[doc.category] || 'อื่นๆ';
                     acc[category] = (acc[category] || 0) + 1;
                     return acc;
-                }, { 'ใบลากิจ': 0, 'ลาพักร้อน': 0, 'ใบลาป่วย': 0, 'อื่นๆ': 0 });
+                }, { 'ใบลาป่วย': 0, 'ใบลากิจ': 0, 'ใบลาพักร้อน': 0, 'ใบลาคลอด': 0,'ใบลาบวช': 0, 'เอกสารส่วนตัว': 0, 'อื่นๆ': 0 });
 
                 setCategoryCounts(counts);
                 setFilesData(response.data);
@@ -142,26 +145,36 @@ const TrendStatistics = () => {
             }
         };
     };
-
     const createDocumentsChartData = () => {
         const months = Array.from({ length: 12 }, (_, i) => `เดือน ${i + 1}`);
-        const documentCounts = Array.from({ length: 12 }, (_, i) =>
-            filesData.filter(
-                f =>
-                    new Date(f.uploadDate).getFullYear() === selectedYear &&
-                    new Date(f.uploadDate).getMonth() === i
-            ).length
-        );
+        const categories = Object.values(categoryMapping);
 
+        // เตรียมข้อมูลสำหรับแต่ละหมวดหมู่ในแต่ละเดือน
+        const categoryData = categories.map(category => {
+            return Array.from({ length: 12 }, (_, i) =>
+                filesData.filter(
+                    f =>
+                        new Date(f.uploadDate).getFullYear() === selectedYear &&
+                        new Date(f.uploadDate).getMonth() === i &&
+                        categoryMapping[f.category] === category
+                ).length
+            );
+        });
         return {
             labels: months,
-            datasets: [
-                {
-                    label: `จำนวนไฟล์เอกสารที่เพิ่มในปี ${selectedYear}`,
-                    data: documentCounts,
-                    backgroundColor: "#3B82F6",
-                }
-            ],
+            datasets: categories.map((category, index) => ({
+                label: category,
+                data: categoryData[index],
+                backgroundColor: [
+                    'rgba(0, 255, 0, 1)', // สีเขียวสด
+                    'rgba(0, 194, 233, 1)', // สีน้ำเงินสด
+                    'rgba(255, 0, 0, 1)', // สีแดงสด
+                    'rgba(255, 20, 147, 0.7)',
+                    'rgba(255, 252, 0, 1)', // สีเหลืองสด
+                    ' rgba(152, 60, 0, 1)',
+                    'rgba(145, 0, 203, 1)', 
+                ][index], // เลือกสีตามลำดับหมวดหมู่
+            })),
             options: {
                 responsive: true,
                 plugins: {
@@ -171,14 +184,14 @@ const TrendStatistics = () => {
                     x: {
                         ticks: {
                             font: {
-                                family: 'Noto Sans Thai, sans-serif', // ใช้ฟอนต์ Noto Sans Thai
+                                family: 'font-FontNoto', // ใช้ฟอนต์ Noto Sans Thai
                             }
                         }
                     },
                     y: {
                         ticks: {
                             font: {
-                                family: 'Noto Sans Thai, sans-serif', // ใช้ฟอนต์ Noto Sans Thai
+                                family: 'font-FontNoto', // ใช้ฟอนต์ Noto Sans Thai
                             }
                         }
                     }
@@ -211,7 +224,7 @@ const TrendStatistics = () => {
                     </Link>
                     <div className="flex justify-between items-center mb-3">
 
-                        <h2 className="text-2xl font-bold text-black font-FontNoto">สถิติแนวโน้มพนักงาน</h2>
+                        <h2 className="text-2xl font-bold text-black font-FontNoto">สถิติแนวโน้มไฟล์เอกสาร</h2>
 
                         <div className="form-control w-80 p-2 border border-gray-300 rounded-lg shadow-lg bg-white">
                             <label htmlFor="yearSelect" className="label flex items-center justify-between">
@@ -237,7 +250,7 @@ const TrendStatistics = () => {
                     {/* ข้อมูลประเภทเอกสาร */}
                     <div className="flex flex-wrap justify-center gap-6 mt-6">
                         {Object.keys(categoryCounts).map((category) => (
-                            <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-48 flex">
+                            <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-40 flex">
                                 <div className="flex flex-col items-center justify-center">
                                     <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
                                     <div className="flex items-center">
@@ -254,7 +267,7 @@ const TrendStatistics = () => {
                     {/* Chart Section */}
                     <div className="flex justify-center gap-4 mt-6 flex-nowrap">
                         {/* Chart for Employee Growth */}
-                        <div
+                        {/* <div
                             className="card bg-base-100 shadow-lg p-4 flex-grow"
                             style={{ border: '1px solid white', maxWidth: '42%' }}
                         >
@@ -262,16 +275,16 @@ const TrendStatistics = () => {
                                 แนวโน้มการเพิ่มจำนวนพนักงาน
                             </h3>
                             <Bar data={createEmployeesChartData()} options={trendsChartOptions} />
-                        </div>
+                        </div> */}
                         {/* Chart for Document Growth */}
                         <div
                             className="card bg-base-100 shadow-lg p-4 flex-grow"
-                            style={{ border: '1px solid white', maxWidth: '42%' }}
+                            style={{ border: '1px solid white', maxWidth: '60%' }}
                         >
-                            <h3 className="text-lg font-bold text-black mb-4 font-FontNoto">
+                            <h3 className="text-lg font-bold text-black mb-4 font-FontNoto text-center">
                                 แนวโน้มการเพิ่มจำนวนไฟล์เอกสาร
                             </h3>
-                            <Bar data={createDocumentsChartData()} options={trendsChartOptions} />
+                            <Bar className="font-FontNoto" data={createDocumentsChartData()} options={trendsChartOptions} />
                         </div>
                     </div>
                 </div>

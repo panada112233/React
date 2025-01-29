@@ -21,12 +21,14 @@ const EditWorkExperience = () => {
   const [uploadMessage, setUploadMessage] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const navigate = useNavigate();
-  const { experienceID, userID } = useParams();  // ดึง userID และ experienceID จาก URL params
+  const { experienceID,userid } = useParams();  // ดึง userID และ experienceID จาก URL params
 
   // Fetch work experience data
   useEffect(() => {
     const fetchWorkExperience = async () => {
       try {
+        console.log(experienceID)
+        console.log(userid)
         const response = await axios.get(`https://localhost:7039/api/Admin/WorkExperiences/${experienceID}`);
         setWorkExperience(response.data);
       } catch (error) {
@@ -36,6 +38,8 @@ const EditWorkExperience = () => {
     };
 
     fetchWorkExperience();
+     
+    fetchAdminInfo();
   }, [experienceID]);
 
   const handleChange = (e) => {
@@ -58,27 +62,22 @@ const EditWorkExperience = () => {
       [name]: value,
     }));
   };
-  useEffect(() => {
-    const fetchAdminInfo = async () => {
-      try {
-        const response = await GetUser(); // ใช้ฟังก์ชันจาก apiservice
-        setAdminName(response.name || "ไม่มีชื่อแอดมิน");
-        setProfilePic(
-          response.profilePictureUrl
-            ? `http://localhost${response.profilePictureUrl}`
-            : "/uploads/admin/default-profile.jpg"
-        );
-      } catch (error) {
-        console.error("Error fetching admin data:", error);
-        setAdminName("ไม่สามารถดึงข้อมูลได้");
-      }
-    };
+  const fetchAdminInfo = async () => {
+    try {
+      const response = await GetUser(); // ใช้ฟังก์ชันจาก apiservice
+      setAdminName(response.name || "ไม่มีชื่อแอดมิน");
+      setProfilePic(
+        response.profilePictureUrl
+          ? `http://localhost${response.profilePictureUrl}`
+          : "/uploads/admin/default-profile.jpg"
+      );
+    } catch (error) {
+      console.error("Error fetching admin data:", error);
+      setAdminName("ไม่สามารถดึงข้อมูลได้");
+    }
+  };
 
-    fetchAdminInfo();
-  }, []);
-
-
-  const handleProfilePicChange = (event) => {
+const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
     if (file) {
       setSelectedFile(file); // เก็บไฟล์ที่เลือกลงใน state
@@ -213,15 +212,11 @@ const EditWorkExperience = () => {
 
   // ตรวจสอบการส่ง userID ที่ไม่ใช่ undefined
   const handleCloseSuccessModal = () => {
-    if (!userID) {
-      setModalMessage("ไม่พบข้อมูลผู้ใช้");
-      document.getElementById("error_modal").showModal();
-      // ใช้ navigate(-1) หรือ window.history.back() เพื่อกลับไปหน้าก่อนหน้า
-      navigate(-1);  // หรือ window.history.back();
-      return;
+
+    if(userid !== null && userid !== ""){
+      navigate(`/users/${userid}`);
     }
-    document.getElementById("success_modal").close();
-    navigate(`/WorkExperienceDetail/${userID}`); // ไปยังหน้า WorkExperienceDetail พร้อม userID
+    // ไปยังหน้า WorkExperienceDetail พร้อม userID
   };
 
   return (
@@ -331,7 +326,7 @@ const EditWorkExperience = () => {
             <div className="mt-6 flex justify-between ">
               <h2 className="text-2xl font-bold text-black  font-FontNoto">แก้ไขข้อมูลประสบการณ์ทำงาน</h2>
               <button
-                onClick={() => navigate("/UserList")}
+                onClick={() => history.back()}
                 className="btn btn-outline btn-error font-FontNoto"
               >
                 กลับไปยังรายการ

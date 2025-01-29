@@ -71,28 +71,22 @@ const HRView = () => {
         console.log(`Form with ID ${formId} has been deleted for HR only.`);
     };
     
-        
     const sendDocumentToEmployee2 = (form) => {
         const userIdFromForm = form.userId; // เก็บ userId จากฟอร์ม
-        const savedDocuments = JSON.parse(localStorage.getItem("sentToEmployeesForms")) || [];
+        const savedDocumentsForEmployee = JSON.parse(localStorage.getItem("sentToEmployeesFormsForEmployee")) || [];
     
-        // เพิ่มฟอร์มพร้อม userId เดิมไปยัง localStorage
-        const updatedDocuments = [
-            ...savedDocuments.filter(doc => doc.id !== form.id), // ลบฟอร์มเก่าที่มี id ซ้ำ
-            { ...form, userId: userIdFromForm } // ใช้ userId เดิมของพนักงาน
+        // เพิ่มเอกสารใหม่พร้อมสถานะ "อัปโหลดอัตโนมัติ"
+        const updatedEmployeeDocs = [
+            ...savedDocumentsForEmployee,
+            { ...form, userId: userIdFromForm, uploadedAutomatically: true } // เพิ่ม flag
         ];
     
-        // อัปเดตฟอร์มใน localStorage
-        localStorage.setItem("sentToEmployeesForms", JSON.stringify(updatedDocuments));
-        setSentToEmployeesForms(updatedDocuments);
+        // อัปเดตใน LocalStorage
+        localStorage.setItem("sentToEmployeesFormsForEmployee", JSON.stringify(updatedEmployeeDocs));
     
-        // ลบฟอร์มออกจากรายการที่ HR อนุมัติแล้ว
-        const updatedHrApprovedForms = hrApprovedForms.filter(f => f.id !== form.id);
-        setHrApprovedForms(updatedHrApprovedForms);
-        localStorage.setItem("hrApprovedForms", JSON.stringify(updatedHrApprovedForms));
+        console.log(`Document automatically uploaded for employee ID: ${userIdFromForm}`);
+    };
     
-        console.log(`Document successfully sent to employee with ID: ${userIdFromForm}`);
-    };    
     
     // ฟังก์ชันแปลงฟอร์มเป็น PDF และดาวน์โหลด
     const downloadPDF = (form) => {
@@ -246,7 +240,7 @@ const HRView = () => {
                                             onClick={() => sendDocumentToEmployee2(form)} // เรียกใช้ฟังก์ชันเมื่อกดปุ่ม
                                         >
                                             ส่งให้พนักงาน
-                                        </button>
+                                        </button> 
 
                                         <button
                                             className="btn btn-sm btn-outline btn-warning ml-2"

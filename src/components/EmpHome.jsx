@@ -13,7 +13,7 @@ const roleMapping = {
   BA: "นักวิเคราะห์ธุรกิจ",
   Employee: "พนักงาน",
 };
- 
+
 const EmpHome = () => {
   const [userName, setUserName] = useState("กำลังโหลด...");
   const [roleText, setRoleText] = useState("กำลังโหลด...");
@@ -26,9 +26,12 @@ const EmpHome = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const categoryMapping = {
-    Identification: 'ลาพักร้อน',
-    WorkContract: 'ใบลากิจ',
     Certificate: 'ใบลาป่วย',
+    WorkContract: 'ใบลากิจ',
+    Identification: 'ใบลาพักร้อน',
+    Maternity: 'ใบลาคลอด',
+    Ordination: 'ใบลาบวช',
+    Doc: 'เอกสารส่วนตัว',
     Others: 'อื่นๆ',
   };
 
@@ -91,23 +94,26 @@ const EmpHome = () => {
         setIsLoading(false);
       }
     };
-
-
     fetchData();
   }, []);
-
   // กำหนดลำดับของประเภทเอกสารที่คุณต้องการ
   const customOrder = [
-    'ลาพักร้อน', // เอกสารที่ต้องการให้แสดงแรก
+    'ใบลาป่วย', // เอกสารที่ต้องการให้แสดงแรก
     'ใบลากิจ',
-    'ใบลาป่วย',
+    'ใบลาพักร้อน',
+    'ใบลาคลอด',
+    'ใบลาบวช',
+    'เอกสารส่วนตัว',
     'อื่นๆ',
   ];
   // สร้าง array ของสีที่จะใช้ในกราฟ
   const colors = [
-    "#FE6A35", // สี
-    "#2CAFFE", // สี
     "#00E272", // สี
+    "#2CAFFE", // สี
+    "#FE6A35", // สี
+    "#FF66FF", // สี
+    "#FFCC33", // สี
+    "#663333", // สี
     "#544FC5", // สี
   ];
 
@@ -218,7 +224,7 @@ const EmpHome = () => {
         <div className="flex flex-wrap justify-center gap-6 mt-6">
           {/* แสดงข้อมูลประเภทเอกสาร */}
           {customOrder.map((category, index) => (
-            <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-48 flex">
+            <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-40 flex">
               <div className="flex flex-col items-center justify-center">
                 <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
                 <div className="flex items-center">

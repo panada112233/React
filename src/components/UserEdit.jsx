@@ -45,9 +45,13 @@ const UserEdit = () => {
       axios
         .get(`https://localhost:7039/api/Admin/users/${UserID}`)
         .then((response) => {
-          const userData = response.data;
-          userData.JDate = formatDateForDisplay(userData.JDate); // แปลงฟอร์แมตวันที่
-          setUser(userData);
+          const userRespose = response.data;
+          console.log(userRespose)
+       
+          setUser({
+            ...userRespose,
+            JDate : userRespose.jDate
+          });
         })
         .catch((error) => {
           console.error("Error loading user data:", error);
@@ -62,15 +66,15 @@ const UserEdit = () => {
 
   function handleChange(e) {
     const { name, value } = e.target;
-
-   // เงื่อนไขสำหรับวันที่
-  if (name === "JDate") {
-    setUser((prevUser) => ({
-      ...prevUser,
-      JDate: value, // เก็บฟอร์แมต YYYY-MM-DD ตรงๆ
-    }));
-    return;
-  }
+    console.log(value)
+    // เงื่อนไขสำหรับวันที่
+    if (name === "JDate") {
+      setUser((prevUser) => ({
+        ...prevUser,
+        JDate:value, // เก็บฟอร์แมต YYYY-MM-DD ตรงๆ
+      }));
+      return;
+    }
 
     // เงื่อนไขสำหรับเบอร์โทรศัพท์
     if (name === "contact") {
@@ -108,6 +112,7 @@ const UserEdit = () => {
     }
 
     const userToSubmit = { ...user, JDate: formatDateForBackend(user.JDate) }; // แปลงฟอร์แมตวันที่
+    console.log(userToSubmit)
     axios
       .put(`https://localhost:7039/api/Admin/Users/${UserID}`, userToSubmit)
       .then(() => {
@@ -120,20 +125,26 @@ const UserEdit = () => {
         setShowModal(true);
       });
   };
-
-  // ฟังก์ชันแปลงฟอร์แมตวันที่
   const formatDateForDisplay = (date) => {
-    if (!date) return ""; // ถ้าไม่มีค่าให้คืนค่าว่าง
-    const [year, month, day] = date.split("-");
-    return `${year}-${month}-${day}`; // ฟอร์แมตที่รองรับ input type="date"
-  };
+    if (!date) return null;
   
+    const nDate = new Date(date);
+    if (isNaN(nDate)) return "";
+  
+    const day = String(nDate.getDate()).padStart(2, '0'); // วันที่
+    const month = String(nDate.getMonth() + 1).padStart(2, '0'); // เดือน
+    const year = nDate.getFullYear(); // ปี
+  
+    // return `${day}-${month}-${year}`; // คืนค่าในรูปแบบ DD-MM-YYYY
+    return `${year}-${month}-${day}`; // คืนค่าในรูปแบบ DD-MM-YYYY
+  };
+
   const formatDateForBackend = (date) => {
     if (!date) return ""; // ถ้าไม่มีค่าให้คืนค่าว่าง
     const [year, month, day] = date.split("-");
     return `${year}-${month}-${day}`; // ฟอร์แมต YYYY-MM-DD
   };
-  
+
   const closeModal = () => {
     setShowModal(false);
     if (modalMessage === "แก้ไขข้อมูลสำเร็จ") {
@@ -473,11 +484,13 @@ const UserEdit = () => {
                   <label className="label">
                     <span className="label-text font-FontNoto">วันที่เริ่มงาน</span>
                   </label>
+
                   <input
                     type="date"
                     name="JDate"
                     placeholder="วันที่เริ่มงาน"
-                    value={user.JDate}
+                    value={formatDateForDisplay(user.JDate)}
+                    
                     onChange={handleChange}
                     className="input input-bordered font-FontNoto w-full text-black"
                     required

@@ -25,9 +25,12 @@ function Document() {
 
 
   const categoryMapping = {
-    Identification: 'ลาพักร้อน',
-    WorkContract: 'ใบลากิจ',
     Certificate: 'ใบลาป่วย',
+    WorkContract: 'ใบลากิจ',
+    Identification: 'ใบลาพักร้อน',
+    Maternity: 'ใบลาคลอด',
+    Ordination: 'ใบลาบวช',
+    Doc: 'เอกสารส่วนตัว',
     Others: 'อื่นๆ',
   };
 
@@ -37,15 +40,23 @@ function Document() {
   // Fetch documents
   const fetchDocuments = async () => {
     try {
+      // โหลดเอกสารของพนักงานปกติ
       const response = await fetch(
         `https://localhost:7039/api/Files/Document?userID=${userID}`
       );
       const data = await response.json();
-      setDocuments(data);
-      setFilteredDocuments(data);
+
+      // โหลดเอกสารที่ HR ส่งให้พนักงานจาก LocalStorage
+      const sentToEmployeesForms = JSON.parse(localStorage.getItem("sentToEmployeesFormsForEmployee")) || [];
+
+      // รวมเอกสารทั้งสองแหล่ง
+      const combinedDocuments = [...data, ...sentToEmployeesForms];
+
+      setDocuments(combinedDocuments); // ตั้งค่าเอกสาร
+      setFilteredDocuments(combinedDocuments); // ใช้สำหรับฟิลเตอร์
     } catch (error) {
-      console.error('Error fetching documents:', error);
-      alert('ไม่สามารถโหลดข้อมูลเอกสารได้');
+      console.error("Error fetching documents:", error);
+      alert("ไม่สามารถโหลดข้อมูลเอกสารได้");
     }
   };
 
@@ -198,10 +209,16 @@ function Document() {
     <div className="">
       <div className="flex justify-start gap-4 mb-4">
         <Link
+          to="/EmpHome/Document"
+          className="btn btn-outline font-FontNoto"
+        >
+          จัดการเอกสาร
+        </Link>
+        <Link
           to="/EmpHome/LeaveForm"
           className="btn btn-outline font-FontNoto"
         >
-          แบบฟอร์มใบลา
+          ฟอร์มใบลา
         </Link>
         <Link
           to="/EmpHome/EmployeeView"
@@ -343,11 +360,14 @@ function Document() {
                   setNewDocument({ ...newDocument, category: e.target.value })
                 }
               >
-                <option value="">กรุณาเลือกหมวดหมู่เอกสาร</option>
-                <option value="Identification">ลาพักร้อน</option>
-                <option value="WorkContract">ใบลากิจ</option>
-                <option value="Certificate">ใบลาป่วย</option>
-                <option value="Others">อื่นๆ</option>
+                <option className="font-FontNoto" value="">กรุณาเลือกหมวดหมู่เอกสาร</option>
+                <option className="font-FontNoto" value="Certificate">ใบลาป่วย</option>
+                <option className="font-FontNoto" value="WorkContract">ใบลากิจ</option>
+                <option className="font-FontNoto" value="Identification">ใบลาพักร้อน</option>
+                <option className="font-FontNoto" value="Maternity">ใบลาคลอด</option>
+                <option className="font-FontNoto" value="Ordination">ใบลาบวช</option>
+                <option className="font-FontNoto" value="Doc">เอกสารส่วนตัว</option>
+                <option className="font-FontNoto" value="Others">อื่นๆ</option>
               </select>
             </div>
             <div className="form-control">
@@ -392,34 +412,61 @@ function Document() {
         <div className="bg-base-100 p-4 rounded-lg shadow font-FontNoto">
           <h3 className="text-xl font-bold text-black mb-4 font-FontNoto">รายการเอกสาร</h3>
           <ul className="space-y-4 font-FontNoto">
-            {filteredDocuments.map((doc) => (
-              <li
-                key={doc.fileID}
-                className="p-4 bg-white rounded-lg shadow flex justify-between items-center"
-              >
-                <div>
-                  <h4 className="text-lg font-bold font-FontNoto">
-                    {doc.description}
-                  </h4>
-                  <p className="text-sm text-gray-600 font-FontNoto">หมวดหมู่เอกสาร: {categoryMapping[doc.category] || doc.category}</p>
-                  <p className="text-sm text-gray-600 font-FontNoto">วันที่อัปโหลด: {doc.uploadDate}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    className="btn btn-outline btn-info font-FontNoto"
-                    onClick={() => handleOpenModal(doc.filePath)}
-                  >
-                    ดูไฟล์
-                  </button>
-                  <button
-                    className="btn btn-outline btn-error font-FontNoto"
-                    onClick={() => handleOpenDeleteModal(doc.fileID)}
-                  >
-                    ลบ
-                  </button>
-                </div>
-              </li>
-            ))}
+            {filteredDocuments.map((doc) => {
+              const fileExtension = doc.filePath ? doc.filePath.split('.').pop() : "ไม่พบข้อมูล";
+              const uploadDate = doc.uploadDate || "จาก HR";
+              const fileCategory = categoryMapping[doc.category] || doc.category || "ไม่ระบุหมวดหมู่";
+              const fileUrl = doc.filePath ? `https://localhost:7039${doc.filePath}` : null; // สร้าง URL สำหรับดูไฟล์
+
+              return (
+                <li
+                  key={doc.fileID || Math.random()}
+                  className="p-4 bg-white rounded-lg shadow flex justify-between items-center"
+                >
+                  <div>
+                    <h4 className="text-lg font-bold font-FontNoto">
+                      {doc.description || "ใบลา"}
+                    </h4>
+                    <p className="text-sm text-gray-600 font-FontNoto">
+                      หมวดหมู่เอกสาร: {fileCategory}
+                    </p>
+                    <p className="text-sm text-gray-600 font-FontNoto">
+                      วันที่อัปโหลด: {uploadDate}
+                    </p>
+                    <p className="text-sm text-gray-600 font-FontNoto">
+                      นามสกุลไฟล์: {fileExtension}
+                    </p>
+                    {doc.uploadedAutomatically && (
+                      <p className="text-sm text-green-500 font-FontNoto">
+                        (เอกสารจาก HR)
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {/* ปุ่มดูไฟล์ */}
+                    <button
+                      className="btn btn-outline btn-info font-FontNoto"
+                      onClick={() => {
+                        if (fileUrl) {
+                          window.open(fileUrl, "_blank"); // เปิดไฟล์ในแท็บใหม่
+                        } else {
+                          alert("ไม่พบไฟล์");
+                        }
+                      }}
+                    >
+                      ดูไฟล์
+                    </button>
+                    {/* ปุ่มลบ */}
+                    <button
+                      className="btn btn-outline btn-error font-FontNoto"
+                      onClick={() => handleOpenDeleteModal(doc.fileID)}
+                    >
+                      ลบ
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
