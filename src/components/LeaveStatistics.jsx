@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import DIcon from '../assets/12.png';
 import {
@@ -13,21 +13,15 @@ import {
   Legend,
 } from "chart.js";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const LeaveStatistics = () => {
   const [employeeNames, setEmployeeNames] = useState([]);
-  const [fileCounts, setFileCounts] = useState([]);
+  const [fileData, setFileData] = useState({});
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [categoryCounts, setCategoryCounts] = useState({});
+  const [documentTypes, setDocumentTypes] = useState([]);
 
   const categoryMapping = {
     Certificate: 'ลาป่วย',
@@ -35,7 +29,7 @@ const LeaveStatistics = () => {
     Identification: 'ลาพักร้อน',
     Maternity: 'ลาคลอด',
     Ordination: 'ลาบวช',
-};
+  };
 
   useEffect(() => {
     const fetchFileData = async () => {
@@ -48,18 +42,22 @@ const LeaveStatistics = () => {
           return acc;
         }, {});
 
-        const fileCountMapping = usersResponse.data.reduce((acc, user) => {
-          acc[`${user.firstName} ${user.lastName}`] = 0;
-          return acc;
-        }, {});
+        const docTypes = Object.values(categoryMapping); // ใช้ชื่อไทยจาก categoryMapping
+        setDocumentTypes(docTypes);
 
-        const categoryCountMapping = Object.keys(categoryMapping).reduce((acc, key) => {
-          acc[categoryMapping[key]] = 0; // ตั้งค่าทุกประเภทเอกสารเริ่มต้นเป็น 0
-          return acc;
-        }, {});
+        const groupedData = {};
+        const categoryCountData = {}; // ตัวแปรสำหรับนับ category
+
+        usersResponse.data.forEach((user) => {
+          const userName = `${user.firstName} ${user.lastName}`;
+          groupedData[userName] = docTypes.reduce((typeCount, type) => {
+            typeCount[type] = 0;
+            return typeCount;
+          }, {});
+        });
 
         filesResponse.data
-          .filter((file) => file.category !== "Others")
+          .filter((file) => file.category !== "Others" && file.category !== "Doc") // กรอง Others และ Doc
           .forEach((file) => {
             const fileDate = new Date(file.uploadDate);
             if (
@@ -67,19 +65,19 @@ const LeaveStatistics = () => {
               fileDate.getFullYear() === selectedYear
             ) {
               const userName = userMapping[file.userID] || "Unknown";
-              fileCountMapping[userName] = (fileCountMapping[userName] || 0) + 1;
-
               const thaiCategory = categoryMapping[file.category];
               if (thaiCategory) {
-                categoryCountMapping[thaiCategory] =
-                  (categoryCountMapping[thaiCategory] || 0) + 1;
+                groupedData[userName][thaiCategory] =
+                  (groupedData[userName][thaiCategory] || 0) + 1;
+                categoryCountData[thaiCategory] =
+                  (categoryCountData[thaiCategory] || 0) + 1;
               }
             }
           });
 
-        setEmployeeNames(Object.keys(fileCountMapping));
-        setFileCounts(Object.values(fileCountMapping));
-        setCategoryCounts(categoryCountMapping);
+        setEmployeeNames(Object.keys(groupedData));
+        setFileData(groupedData);
+        setCategoryCounts(categoryCountData); // อัปเดตข้อมูลประเภทเอกสาร
       } catch (error) {
         console.error("Error fetching file data:", error);
       }
@@ -89,15 +87,34 @@ const LeaveStatistics = () => {
   }, [selectedMonth, selectedYear]);
 
   const createChartData = () => {
+    const totalDocuments = employeeNames.map((name) =>
+      documentTypes.reduce((sum, type) => sum + (fileData[name][type] || 0), 0)
+    );
+
+    const colors = [
+      "#66FF99",
+      "#66CCFF",
+      "#FF3366",
+      "#FF99CC",
+      "#FFC300",
+    ];
+
+    const datasets = [
+      ...documentTypes.map((type, index) => ({
+        label: type,
+        data: employeeNames.map((name) => fileData[name][type] || 0),
+        backgroundColor: colors[index % colors.length], // ใช้สีวนซ้ำหากจำนวนประเภทเอกสารเกินสีที่กำหนด
+      })),
+      {
+        label: "รวมใบลา",
+        data: totalDocuments,
+        backgroundColor: "#778899", // สีสำหรับข้อมูลรวม
+      },
+    ];
+
     return {
       labels: employeeNames,
-      datasets: [
-        {
-          label: `จำนวนการลาพนักงานในเดือน ${selectedMonth + 1} ปี ${selectedYear}`,
-          data: fileCounts,
-          backgroundColor: "#3B82F6",
-        },
-      ],
+      datasets: datasets,
     };
   };
 
@@ -110,7 +127,9 @@ const LeaveStatistics = () => {
       tooltip: {
         callbacks: {
           label: (tooltipItem) => {
-            return `จำนวนการลา: ${tooltipItem.raw}`;
+            const datasetLabel = tooltipItem.dataset.label; // ชื่อประเภทเอกสาร
+            const value = tooltipItem.raw; // ค่าของข้อมูลในจุดนี้
+            return `${datasetLabel}: ${value}`; // แสดงชื่อเอกสารและจำนวน
           },
         },
       },
@@ -145,9 +164,8 @@ const LeaveStatistics = () => {
         bottom: 20,
       },
     },
-    barThickness: 25, // ลดความหนาของแท่งกราฟ
+    barThickness: 15, // ลดความหนาของแท่งกราฟ
   };
-
 
   const months = [
     "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -158,10 +176,7 @@ const LeaveStatistics = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-
-      {/* Main Content */}
       <div className="flex min-h-screen bg-base-200">
-        {/* Content */}
         <div className="flex-1 p-6 bg-white shadow-lg rounded-lg ml-1">
           <Link to="/EmpHome/TrendStatistics" className="btn btn-outline btn-success font-FontNoto mt-2" style={{ marginRight: '10px' }}>
             สถิติแนวโน้ม
@@ -196,10 +211,11 @@ const LeaveStatistics = () => {
               ))}
             </select>
           </div>
+
           {/* ข้อมูลประเภทเอกสาร */}
           <div className="flex flex-wrap justify-center gap-6 mt-6">
             {Object.keys(categoryCounts).map((category) => (
-              <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-48 flex">
+              <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-40 flex">
                 <div className="flex flex-col items-center justify-center">
                   <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
                   <div className="flex items-center">
@@ -218,7 +234,7 @@ const LeaveStatistics = () => {
           <div className="flex justify-center items-center mt-6">
             <div
               className="card bg-base-100 shadow-lg p-4 flex-grow"
-              style={{ border: '5px solid white', maxWidth: '60%' }}
+              style={{ border: '5px solid white', maxWidth: '70%' }}
             >
               <h3 className="text-lg font-bold text-black mb-4 font-FontNoto">
                 สถิติการลาของพนักงาน

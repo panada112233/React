@@ -43,33 +43,36 @@ const AdminDashboard = () => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [userinfostate, setuserinfoState] = useState(0);
 
-
   const categoryMapping = {
-    Identification: 'ลาพักร้อน',
-    WorkContract: 'ใบลากิจ',
     Certificate: 'ใบลาป่วย',
+    WorkContract: 'ใบลากิจ',
+    Identification: 'ใบลาพักร้อน',
+    Maternity: 'ใบลาคลอด',
+    Ordination: 'ใบลาบวช',
+    Doc: 'เอกสารส่วนตัว',
     Others: 'อื่นๆ',
   };
+
   const fectUserinfo = async () => {
     try {
-        const responseUser = await GetUser();
-        console.log("Response from GetUser:", responseUser);
+      const responseUser = await GetUser();
+      console.log("Response from GetUser:", responseUser);
 
-        if (!responseUser || !responseUser.userid) {
-            throw new Error("User ID not found in response");
-        }
+      if (!responseUser || !responseUser.userid) {
+        throw new Error("User ID not found in response");
+      }
 
-        setuserinfoState(responseUser.userid); // ตั้งค่า userinfostate
-        setAdminName(responseUser.name || "ไม่มีชื่อแอดมิน");
-        setProfilePic(
-            responseUser.profilePictureUrl
-                ? `http://localhost${responseUser.profilePictureUrl}`
-                : "/uploads/admin/default-profile.jpg"
-        );
+      setuserinfoState(responseUser.userid); // ตั้งค่า userinfostate
+      setAdminName(responseUser.name || "ไม่มีชื่อแอดมิน");
+      setProfilePic(
+        responseUser.profilePictureUrl
+          ? `http://localhost${responseUser.profilePictureUrl}`
+          : "/uploads/admin/default-profile.jpg"
+      );
     } catch (e) {
-        console.error("Error fetching user info:", e);
+      console.error("Error fetching user info:", e);
     }
-};
+  };
 
 
   useEffect(() => {
@@ -80,7 +83,7 @@ const AdminDashboard = () => {
           const category = categoryMapping[doc.category] || 'อื่นๆ';
           acc[category] = (acc[category] || 0) + 1;
           return acc;
-        }, { 'ใบลากิจ': 0, 'ลาพักร้อน': 0, 'ใบลาป่วย': 0, 'อื่นๆ': 0 });
+        }, { 'ใบลาป่วย': 0, 'ใบลากิจ': 0, 'ใบลาพักร้อน': 0, 'ใบลาคลอด': 0, 'ใบลาบวช': 0, 'เอกสารส่วนตัว': 0, 'อื่นๆ': 0 });
 
         setCategoryCounts(counts);
         setFilesData(response.data);
@@ -136,9 +139,9 @@ const AdminDashboard = () => {
 
   const handleNameUpdate = async () => {
     if (!userinfostate) {
-        console.error("User ID is missing, cannot update admin name");
-        setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณาตรวจสอบข้อมูลผู้ใช้</p>);
-        return;
+      console.error("User ID is missing, cannot update admin name");
+      setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณาตรวจสอบข้อมูลผู้ใช้</p>);
+      return;
     }
 
     const formData = new FormData();
@@ -146,18 +149,18 @@ const AdminDashboard = () => {
     formData.append("id", userinfostate);
 
     try {
-        const response = await axios.post(
-            "https://localhost:7039/api/Admin/UpdateAdminInfo",
-            formData,
-            { headers: { "Content-Type": "multipart/form-data" } }
-        );
-        setIsEditingName(false);
-        setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
+      const response = await axios.post(
+        "https://localhost:7039/api/Admin/UpdateAdminInfo",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      setIsEditingName(false);
+      setUploadMessage(<p className="text-green-500 font-FontNoto">บันทึกชื่อสำเร็จ!</p>);
     } catch (error) {
-        console.error("Error updating admin name:", error.response?.data || error);
-        setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
+      console.error("Error updating admin name:", error.response?.data || error);
+      setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
-};
+  };
 
   // อัปโหลดรูปโปรไฟล์ใหม่
   const handleUpload = async () => {
@@ -265,23 +268,34 @@ const AdminDashboard = () => {
 
   const createDocumentsChartData = () => {
     const months = Array.from({ length: 12 }, (_, i) => `เดือน ${i + 1}`);
-    const documentCounts = Array.from({ length: 12 }, (_, i) =>
-      filesData.filter(
-        f =>
-          new Date(f.uploadDate).getFullYear() === selectedYear &&
-          new Date(f.uploadDate).getMonth() === i
-      ).length
-    );
+    const categories = Object.values(categoryMapping);
 
+    // เตรียมข้อมูลสำหรับแต่ละหมวดหมู่ในแต่ละเดือน
+    const categoryData = categories.map(category => {
+      return Array.from({ length: 12 }, (_, i) =>
+        filesData.filter(
+          f =>
+            new Date(f.uploadDate).getFullYear() === selectedYear &&
+            new Date(f.uploadDate).getMonth() === i &&
+            categoryMapping[f.category] === category
+        ).length
+      );
+    });
     return {
       labels: months,
-      datasets: [
-        {
-          label: `จำนวนไฟล์เอกสารที่เพิ่มในปี ${selectedYear}`,
-          data: documentCounts,
-          backgroundColor: "#3B82F6",
-        }
-      ],
+      datasets: categories.map((category, index) => ({
+        label: category,
+        data: categoryData[index],
+        backgroundColor: [
+          'rgba(0, 255, 0, 1)', // สีเขียวสด
+          'rgba(0, 194, 233, 1)', // สีน้ำเงินสด
+          'rgba(255, 0, 0, 1)', // สีแดงสด
+          'rgba(255, 20, 147, 0.7)',
+          'rgba(255, 252, 0, 1)', // สีเหลืองสด
+          ' rgba(152, 60, 0, 1)',
+          'rgba(145, 0, 203, 1)',
+        ][index], // เลือกสีตามลำดับหมวดหมู่
+      })),
       options: {
         responsive: true,
         plugins: {
@@ -449,7 +463,7 @@ const AdminDashboard = () => {
           {/* ข้อมูลประเภทเอกสาร */}
           <div className="flex flex-wrap justify-center gap-6 mt-6">
             {Object.keys(categoryCounts).map((category) => (
-              <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-48 flex">
+              <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-40 flex">
                 <div className="flex flex-col items-center justify-center">
                   <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
                   <div className="flex items-center">
@@ -466,7 +480,7 @@ const AdminDashboard = () => {
           {/* Chart Section */}
           <div className="flex justify-center gap-4 mt-6 flex-nowrap">
             {/* Chart for Employee Growth */}
-            <div
+            {/* <div
               className="card bg-base-100 shadow-lg p-4 flex-grow"
               style={{ border: '1px solid white', maxWidth: '42%' }}
             >
@@ -474,16 +488,16 @@ const AdminDashboard = () => {
                 แนวโน้มการเพิ่มจำนวนพนักงาน
               </h3>
               <Bar data={createEmployeesChartData()} options={trendsChartOptions} />
-            </div>
+            </div> */}
             {/* Chart for Document Growth */}
             <div
               className="card bg-base-100 shadow-lg p-4 flex-grow"
-              style={{ border: '1px solid white', maxWidth: '42%' }}
+              style={{ border: '1px solid white', maxWidth: '60%' }}
             >
-              <h3 className="text-lg font-bold text-black mb-4 font-FontNoto">
+              <h3 className="text-lg font-bold text-black mb-4 font-FontNoto text-center">
                 แนวโน้มการเพิ่มจำนวนไฟล์เอกสาร
               </h3>
-              <Bar data={createDocumentsChartData()} options={trendsChartOptions} />
+              <Bar className="font-FontNoto" data={createDocumentsChartData()} options={trendsChartOptions} />
             </div>
           </div>
         </div>

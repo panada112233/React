@@ -14,14 +14,7 @@ import {
   Legend,
 } from "chart.js";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const LeaveGraph = () => {
   const [fileData, setFileData] = useState([]);
@@ -35,11 +28,14 @@ const LeaveGraph = () => {
   const [isEditingName, setIsEditingName] = useState(false); // เพิ่มตัวแปร isEditingName
   const [uploadMessage, setUploadMessage] = useState("");
   const [categoryCounts, setCategoryCounts] = useState({});
+  const [documentTypes, setDocumentTypes] = useState([]);
 
   const categoryMapping = {
-    Identification: 'ลาพักร้อน',
-    WorkContract: 'ลากิจ',
     Certificate: 'ลาป่วย',
+    WorkContract: 'ลากิจส่วนตัว',
+    Identification: 'ลาพักร้อน',
+    Maternity: 'ลาคลอด',
+    Ordination: 'ลาบวช',
   };
 
   useEffect(() => {
@@ -53,18 +49,22 @@ const LeaveGraph = () => {
           return acc;
         }, {});
 
-        const fileCountMapping = usersResponse.data.reduce((acc, user) => {
-          acc[`${user.firstName} ${user.lastName}`] = 0;
-          return acc;
-        }, {});
+        const docTypes = Object.values(categoryMapping); // ใช้ชื่อไทยจาก categoryMapping
+        setDocumentTypes(docTypes);
 
-        const categoryCountMapping = Object.keys(categoryMapping).reduce((acc, key) => {
-          acc[categoryMapping[key]] = 0; // ตั้งค่าทุกประเภทเอกสารเริ่มต้นเป็น 0
-          return acc;
-        }, {});
+        const groupedData = {};
+        const categoryCountData = {}; // ตัวแปรสำหรับนับ category
+
+        usersResponse.data.forEach((user) => {
+          const userName = `${user.firstName} ${user.lastName}`;
+          groupedData[userName] = docTypes.reduce((typeCount, type) => {
+            typeCount[type] = 0;
+            return typeCount;
+          }, {});
+        });
 
         filesResponse.data
-          .filter((file) => file.category !== "Others")
+          .filter((file) => file.category !== "Others" && file.category !== "Doc") // กรอง Others และ Doc
           .forEach((file) => {
             const fileDate = new Date(file.uploadDate);
             if (
@@ -72,19 +72,19 @@ const LeaveGraph = () => {
               fileDate.getFullYear() === selectedYear
             ) {
               const userName = userMapping[file.userID] || "Unknown";
-              fileCountMapping[userName] = (fileCountMapping[userName] || 0) + 1;
-
               const thaiCategory = categoryMapping[file.category];
               if (thaiCategory) {
-                categoryCountMapping[thaiCategory] =
-                  (categoryCountMapping[thaiCategory] || 0) + 1;
+                groupedData[userName][thaiCategory] =
+                  (groupedData[userName][thaiCategory] || 0) + 1;
+                categoryCountData[thaiCategory] =
+                  (categoryCountData[thaiCategory] || 0) + 1;
               }
             }
           });
 
-        setEmployeeNames(Object.keys(fileCountMapping));
-        setFileCounts(Object.values(fileCountMapping));
-        setCategoryCounts(categoryCountMapping);
+        setEmployeeNames(Object.keys(groupedData));
+        setFileData(groupedData);
+        setCategoryCounts(categoryCountData); // อัปเดตข้อมูลประเภทเอกสาร
       } catch (error) {
         console.error("Error fetching file data:", error);
       }
@@ -94,15 +94,34 @@ const LeaveGraph = () => {
   }, [selectedMonth, selectedYear]);
 
   const createChartData = () => {
+    const totalDocuments = employeeNames.map((name) =>
+      documentTypes.reduce((sum, type) => sum + (fileData[name][type] || 0), 0)
+    );
+
+    const colors = [
+      "#66FF99",
+      "#66CCFF",
+      "#FF3366",
+      "#FF99CC",
+      "#FFC300",
+    ];
+
+    const datasets = [
+      ...documentTypes.map((type, index) => ({
+        label: type,
+        data: employeeNames.map((name) => fileData[name][type] || 0),
+        backgroundColor: colors[index % colors.length], // ใช้สีวนซ้ำหากจำนวนประเภทเอกสารเกินสีที่กำหนด
+      })),
+      {
+        label: "รวมใบลา",
+        data: totalDocuments,
+        backgroundColor: "#778899", // สีสำหรับข้อมูลรวม
+      },
+    ];
+
     return {
       labels: employeeNames,
-      datasets: [
-        {
-          label: `จำนวนการลาพนักงานในเดือน ${selectedMonth + 1} ปี ${selectedYear}`,
-          data: fileCounts,
-          backgroundColor: "#3B82F6",
-        },
-      ],
+      datasets: datasets,
     };
   };
 
@@ -115,7 +134,9 @@ const LeaveGraph = () => {
       tooltip: {
         callbacks: {
           label: (tooltipItem) => {
-            return `จำนวนการลา: ${tooltipItem.raw}`;
+            const datasetLabel = tooltipItem.dataset.label; // ชื่อประเภทเอกสาร
+            const value = tooltipItem.raw; // ค่าของข้อมูลในจุดนี้
+            return `${datasetLabel}: ${value}`; // แสดงชื่อเอกสารและจำนวน
           },
         },
       },
@@ -150,7 +171,7 @@ const LeaveGraph = () => {
         bottom: 20,
       },
     },
-    barThickness: 25, // ลดความหนาของแท่งกราฟ
+    barThickness: 15, // ลดความหนาของแท่งกราฟ
   };
 
   useEffect(() => {
@@ -168,10 +189,10 @@ const LeaveGraph = () => {
         setAdminName("ไม่สามารถดึงข้อมูลได้");
       }
     };
-  
+
     fetchAdminInfo();
   }, []);
-  
+
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0]; // เลือกไฟล์แรกจากไฟล์ที่เลือก
@@ -191,7 +212,7 @@ const LeaveGraph = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">กรุณากรอกชื่อแอดมิน</p>);
       return;
     }
-  
+
     // ดึงข้อมูล User ID จาก localStorage
     const userInfo = JSON.parse(localStorage.getItem("userinfo"));
     if (!userInfo || !userInfo.userid) {
@@ -199,11 +220,11 @@ const LeaveGraph = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">ไม่พบข้อมูลผู้ใช้</p>);
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("name", adminName);
     formData.append("id", userInfo.userid);
-  
+
     try {
       const response = await axios.post(
         "https://localhost:7039/api/Admin/UpdateAdminInfo",
@@ -217,7 +238,7 @@ const LeaveGraph = () => {
       setUploadMessage(<p className="text-red-500 font-FontNoto">เกิดข้อผิดพลาดในการบันทึกชื่อ</p>);
     }
   };
-  
+
 
   // อัปโหลดรูปโปรไฟล์ใหม่
   const handleUpload = async () => {
@@ -267,7 +288,7 @@ const LeaveGraph = () => {
       );
     }
   };
-  
+
   const months = [
     "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
     "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
@@ -358,7 +379,7 @@ const LeaveGraph = () => {
                 />
                 <span id="fileName" className="text-xs text-black font-FontNoto py-1 px-2 ">
                   ไม่ได้เลือกไฟล์
-                </span> 
+                </span>
               </div>
 
               <button
@@ -427,7 +448,7 @@ const LeaveGraph = () => {
           <div className="flex justify-center items-center mt-6">
             <div
               className="card bg-base-100 shadow-lg p-4 flex-grow"
-              style={{ border: '5px solid white', maxWidth: '60%' }}
+              style={{ border: '5px solid white', maxWidth: '70%' }}
             >
               <h3 className="text-lg font-bold text-black mb-4 font-FontNoto">
                 สถิติการลาของพนักงาน

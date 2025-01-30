@@ -453,6 +453,9 @@ const LeaveForm = () => {
                             value={formData.date || ""} // ใช้ "" เมื่อค่าเป็น undefined
                             className="input input-bordered font-FontNoto"
                             onChange={handleChange}
+                            style={{
+                                colorScheme: "light", // บังคับไอคอนให้ใช้โหมดสว่าง
+                            }}
                         />
                     </div>
                     <div className="grid grid-cols-1 gap-4">
@@ -556,12 +559,16 @@ const LeaveForm = () => {
                         <label className="label" style={{ whiteSpace: 'nowrap' }}>
                             <span className="label-text font-FontNoto">ตั้งแต่วันที่ :</span>
                         </label>
-                        <input type="date" name="fromDate" value={formData.fromDate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} />
+                        <input type="date" name="fromDate" value={formData.fromDate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
+                            colorScheme: "light",
+                        }} />
 
                         <label className="label" style={{ whiteSpace: 'nowrap' }}>
                             <span className="label-text font-FontNoto">ถึงวันที่ :</span>
                         </label>
-                        <input type="date" name="toDate" value={formData.toDate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} />
+                        <input type="date" name="toDate" value={formData.toDate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
+                            colorScheme: "light",
+                        }} />
 
                         <label className="label" style={{ whiteSpace: 'nowrap' }}>
                             <span className="label-text font-FontNoto">มีกำหนด :</span>
@@ -609,12 +616,16 @@ const LeaveForm = () => {
                         <label className="label" style={{ whiteSpace: 'nowrap' }}>
                             <span className="label-text font-FontNoto">ครั้งสุดท้าย ตั้งแต่วันที่ :</span>
                         </label>
-                        <input type="date" name="fromd" value={formData.fromd || ''} className="input input-bordered font-FontNoto" onChange={handleChange} />
+                        <input type="date" name="fromd" value={formData.fromd || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
+                            colorScheme: "light",
+                        }} />
 
                         <label className="label" style={{ whiteSpace: 'nowrap' }}>
                             <span className="label-text font-FontNoto">ถึงวันที่ :</span>
                         </label>
-                        <input type="date" name="tod" value={formData.tod || ''} className="input input-bordered font-FontNoto" onChange={handleChange} />
+                        <input type="date" name="tod" value={formData.tod || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
+                            colorScheme: "light",
+                        }} />
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <label className="label" style={{ whiteSpace: 'nowrap' }}>
@@ -677,6 +688,9 @@ const LeaveForm = () => {
                             value={formData.tt || ''}
                             className="input input-bordered font-FontNoto"
                             onChange={handleChange}
+                            style={{
+                                colorScheme: "light", // บังคับไอคอนให้ใช้โหมดสว่าง
+                            }}
                         />
                     </div>
 

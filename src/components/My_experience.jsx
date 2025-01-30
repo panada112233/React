@@ -16,6 +16,10 @@ function MyExperience() {
     description: "",
     salary: "",
   }); // เก็บข้อมูลใหม่
+  const [errors, setErrors] = useState({
+    startDate: "",
+    endDate: "",
+  }); // สถานะข้อผิดพลาด
   const [isEditing, setIsEditing] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const userID = sessionStorage.getItem("userId") || "";
@@ -51,6 +55,18 @@ function MyExperience() {
   // ฟังก์ชันเพิ่ม/แก้ไขประสบการณ์
   const handleAddOrEditExperience = async (e) => {
     e.preventDefault();
+    const newErrors = {
+      startDate: newExperience.startDate.length !== 4 ? "กรุณากรอกปี พ.ศ. ให้ครบ 4 หลัก" : "",
+      endDate: newExperience.endDate && newExperience.endDate.length !== 4 ? "กรุณากรอกปี พ.ศ. ให้ครบ 4 หลัก" : "",
+    };
+
+    setErrors(newErrors);
+
+    // ตรวจสอบว่ามีข้อผิดพลาดหรือไม่
+    if (newErrors.startDate || newErrors.endDate) {
+      return;
+    }
+
     try {
       if (isEditing) {
         const updatedExperience = { ...experiences[editIndex], ...newExperience };
@@ -104,9 +120,16 @@ function MyExperience() {
   // ฟังก์ชันจัดการการเปลี่ยนแปลงในฟอร์ม
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // ตรวจสอบให้รับเฉพาะภาษาไทย
-    const thaiPattern = /^[ก-๙\s]*$/;
-    if (thaiPattern.test(value) || value === "") {
+
+    // เงื่อนไขสำหรับข้อมูลที่ไม่ต้องการตรวจสอบ (เช่น ตัวเลข)
+    if (name === "salary" || name === "startDate" || name === "endDate") {
+      setNewExperience((prev) => ({ ...prev, [name]: value }));
+      return;
+    }
+
+    // เงื่อนไขสำหรับชื่อบริษัทและตำแหน่ง (ภาษาไทยและอังกฤษ)
+    const thaiEnglishPattern = /^[ก-๙a-zA-Z\s]*$/;
+    if (thaiEnglishPattern.test(value) || value === "") {
       setNewExperience((prev) => ({ ...prev, [name]: value }));
     }
   };
@@ -332,21 +355,20 @@ function MyExperience() {
                 <span className="label-text font-FontNoto">ปี พ.ศ. เริ่มต้น</span>
               </label>
               <input
-                type="text" // เปลี่ยนจาก number เป็น text เพื่อรองรับ pattern
+                type="text"
                 name="startDate"
-                className="input input-bordered font-FontNoto"
+                className={`input input-bordered font-FontNoto ${errors.startDate ? "border-red-500" : ""}`}
                 placeholder="กรอกปีที่ทำงาน"
                 value={newExperience.startDate}
-                pattern="^[0-9]{4}$" // ตรวจสอบให้เป็นตัวเลข 4 หลัก
-                onChange={handleChange}
-                onKeyPress={(e) => {
-                  if (!/[0-9]/.test(e.key) || newExperience.startDate.length >= 4) {
-                    e.preventDefault(); // หยุดการพิมพ์ถ้าไม่ใช่ตัวเลขหรือเกิน 4 ตัว
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (/^[0-9]{0,4}$/.test(value)) {
+                    setNewExperience((prev) => ({ ...prev, startDate: value }));
                   }
                 }}
-                title="กรุณากรอกตัวเลข 4 หลัก"
                 required
               />
+              {errors.startDate && <span className="text-red-500 text-sm font-FontNoto">{errors.startDate}</span>}
             </div>
 
             <div className="form-control">
@@ -354,29 +376,25 @@ function MyExperience() {
                 <span className="label-text font-FontNoto">ปี พ.ศ. สิ้นสุด</span>
               </label>
               <input
-                type="text" // เปลี่ยนจาก number เป็น text เพื่อรองรับ pattern
+                type="text"
                 name="endDate"
-                className="input input-bordered font-FontNoto"
+                className={`input input-bordered font-FontNoto ${errors.endDate ? "border-red-500" : ""}`}
                 placeholder="กรอกปีสิ้นสุด (เว้นว่างหากยังทำงาน)"
                 value={newExperience.endDate}
-                pattern="(^$|[0-9]{4})" // ตรวจสอบให้กรอกปีเป็นตัวเลข 4 หลัก หรือเว้นว่าง
-                onChange={handleChange}
-                onKeyPress={(e) => {
-                  if (!/[0-9]/.test(e.key) || newExperience.endDate.length >= 4) {
-                    e.preventDefault(); // หยุดการพิมพ์ถ้าไม่ใช่ตัวเลขหรือเกิน 4 ตัว
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (/^[0-9]{0,4}$/.test(value)) {
+                    setNewExperience((prev) => ({ ...prev, endDate: value }));
                   }
                 }}
-                title="กรุณากรอกตัวเลข 4 หลัก หรือเว้นว่าง"
               />
+              {errors.endDate && <span className="text-red-500 text-sm font-FontNoto">{errors.endDate}</span>}
             </div>
-
-
           </div>
           <button type="submit" className="btn btn-warning w-full font-FontNoto">
             {isEditing ? "บันทึกการแก้ไข" : "เพิ่มประสบการณ์"}
           </button>
         </form>
-
 
         <div className="mt-6">
           <div className="flex justify-between items-center mb-4">
@@ -395,7 +413,7 @@ function MyExperience() {
               <table className="table table-zebra w-full text-center">
                 <thead>
                   <tr className="text-black text-center bg-blue-100 font-FontNoto">
-                    <th className="table-header font-FontNoto">#</th>
+                    {/* <th className="table-header font-FontNoto">#</th> */}
                     <th className="table-header font-FontNoto">บริษัท</th>
                     <th className="table-header font-FontNoto">ตำแหน่ง</th>
                     <th className="table-header font-FontNoto">เงินเดือน</th>
@@ -406,7 +424,7 @@ function MyExperience() {
                 <tbody>
                   {experiences.map((exp, index) => (
                     <tr key={index}>
-                      <td className="table-header font-FontNoto">{index + 1}</td>
+                      {/* <td className="table-header font-FontNoto">{index + 1}</td> */}
                       <td className="table-header font-FontNoto">{exp.companyName}</td>
                       <td className="table-header font-FontNoto ">{exp.jobTitle}</td>
                       <td className="table-header font-FontNoto text-center">{exp.salary} บาท</td>

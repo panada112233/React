@@ -54,19 +54,7 @@ function MyEducation() {
   const handleAddOrEditEducation = async (e) => {
     e.preventDefault();
 
-    // ตรวจสอบค่าที่เป็นภาษาไทย
-    if (!newEducation.institute || !/^[ก-๙\s]+$/.test(newEducation.institute)) {
-      setModalMessage("กรุณากรอกชื่อสถาบันเป็นภาษาไทยเท่านั้น");
-      setIsModalOpen(true);
-      return;
-    }
 
-    if (!newEducation.fieldOfStudy || !/^[ก-๙\s\-]+$/.test(newEducation.fieldOfStudy)) {
-      setModalMessage("กรุณากรอกสาขาวิชาเป็นภาษาไทยและสามารถใช้เครื่องหมาย '-' ได้เท่านั้น");
-      setIsModalOpen(true);
-      return;
-    }
-    
     // ตรวจสอบรูปแบบปีที่ศึกษา
     const yearRegex = /^\d{4}-\d{4}$/;
     if (!newEducation.year || !yearRegex.test(newEducation.year)) {
@@ -348,9 +336,9 @@ function MyEducation() {
                 onChange={handleChange}
                 required
               >
-                <option value="">กรุณาเลือกระดับการศึกษา</option>
+                <option className="font-FontNoto" value="">กรุณาเลือกระดับการศึกษา</option>
                 {Object.entries(levelLabels).map(([key, label]) => (
-                  <option key={key} value={key}>
+                  <option className="font-FontNoto" key={key} value={key}>
                     {label}
                   </option>
                 ))}
@@ -363,21 +351,12 @@ function MyEducation() {
               <input
                 type="text"
                 name="institute"
-                className={`input font-FontNoto ${!/^[ก-๙\s]+$/.test(newEducation.institute) && newEducation.institute !== ''
-                  ? 'border-red-500'
-                  : 'input-bordered'
-                  }`}
+                className="input font-FontNoto input-bordered"
                 placeholder="กรอกชื่อสถาบัน"
                 value={newEducation.institute}
                 onChange={handleChange}
                 required
               />
-              {!/^[ก-๙\s]+$/.test(newEducation.institute) && newEducation.institute !== '' && (
-                <span className="text-red-500 text-sm mt-1 font-FontNoto">
-                  กรุณากรอกชื่อสถาบันเป็นภาษาไทยเท่านั้น
-                </span>
-              )}
-
             </div>
 
             <div className="form-control">
@@ -387,20 +366,12 @@ function MyEducation() {
               <input
                 type="text"
                 name="fieldOfStudy"
-                className={`input font-FontNoto ${!/^[ก-๙\s\-]+$/.test(newEducation.fieldOfStudy) && newEducation.fieldOfStudy !== ''
-                  ? 'border-red-500'
-                  : 'input-bordered'
-                  }`}
+                className="input font-FontNoto input-bordered"
                 placeholder="กรอกสาขาวิชา"
                 value={newEducation.fieldOfStudy}
                 onChange={handleChange}
                 required
               />
-              {!/^[ก-๙\s\-]+$/.test(newEducation.fieldOfStudy) && newEducation.fieldOfStudy !== '' && (
-                <span className="text-red-500 text-sm mt-1 font-FontNoto">
-                  กรุณากรอกสาขาวิชาเป็นภาษาไทยและสามารถใช้เครื่องหมาย "-" ได้เท่านั้น
-                </span>
-              )}
             </div>
 
             <div className="form-control">
