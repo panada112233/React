@@ -3,204 +3,269 @@ import { Link } from 'react-router-dom';
 import { pdfMake, font } from "../libs/pdfmake";
 
 const LeaveForm = () => {
-    const [formData, setFormData] = useState({
-        date: "",
-        month: "",
-        year: "",
-        aa: "",
-        department: "",
-        position: "",
-        leaveType: "",
-        leT: "",
-        fromDate: "",
-        toDate: "",
-        fromd: "",
-        tod: "",
-        tt: "",
-        totalDays: "",
-        totald: "",
-        reason: "",
-        contact: "",
-        phone: "",
-        sickDaysUsed: "",
-        sickDaysCurrent: "",
-        sickDaysTotal: "",
-        personalDaysUsed: "",
-        personalDaysCurrent: "",
-        personalDaysTotal: "",
-        vacationDaysUsed: "",
-        vacationDaysCurrent: "",
-        vacationDaysTotal: "",
-        maternityDaysUsed: "",
-        maternityDaysCurrent: "",
-        maternityDaysTotal: "",
-        ordinationDaysUsed: "",
-        ordinationDaysCurrent: "",
-        ordinationDaysTotal: "",
-    });
-    const [savedForms, setSavedForms] = useState([]);
+
     const userId = sessionStorage.getItem("userId");
+    const [formData, setFormData] = useState({
+        userid: userId,
+        leaveTypeId: "",
+        createdate: "",
+        fullname: "",
+        rolesid: "",
+        reason: "",
+        startdate: "",
+        enddate: "",
+        totalleave: 0,
+        leavedType: "",
+        leaved_startdate: "",
+        leaved_enddate: "",
+        totalleaved: 0,
+        friendeContact: "",
+        contact: "",
+        workingstart: "",
+        approvedDate: "",
+        hrApprovedDate: "",
+        sentToHRDate: "",
+        hrSignature: "",
+        managerName: "",
+        managerComment: "",
+    });
+
+    const [savedForms, setSavedForms] = useState([]);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [isNotificationModalOpen, setNotificationModalOpen] = useState(false);
+    const [notificationMessage, setNotificationMessage] = useState("");
+
+    const [leavetpyeState, setleavetpyeState] = useState([]);
+    const [rolesState, setrolesState] = useState([]);
+    const leaveTypeName = leavetpyeState.find(item => item.leaveTypeid === formData.leaveTypeId)?.leaveTypeTh || "ไม่ระบุ";
+    const roleName = rolesState.find(item => item.rolesid === formData.rolesid)?.rolesname || "ไม่ระบุ";
+    const leavedTypeName = leavetpyeState.find(item => item.leaveTypeid === formData.leavedType)?.leaveTypeTh || "ไม่ระบุ";
 
     useEffect(() => {
-        if (!userId) {
-            console.error("User ID ไม่ถูกตั้งค่าใน sessionStorage");
-            return;
+        if (userId) {
+            fetchSavedForms();
+            fetchLeaveType();
+            fetchRoles();
         }
-        // โหลดฟอร์มของผู้ใช้จาก localStorage
-        const storedForms = localStorage.getItem(`savedForms_${userId}`);
+    }, [userId]);
+    const fetchLeaveType = async () => {
+
+        try {
+            const response = await fetch(`https://localhost:7039/api/Document/GetLeaveTypes`);
+            if (response.ok) {
+                const data = await response.json();
+
+                setleavetpyeState(data)
+            } else {
+                console.warn("ไม่พบฟอร์มที่บันทึก");
+
+            }
+        } catch (error) {
+            console.error("Error fetching saved forms:", error);
+        }
+    }
+    const fetchRoles = async () => {
+
+        try {
+            const response = await fetch(`https://localhost:7039/api/Document/GetRoles`);
+            if (response.ok) {
+                const data = await response.json();
+                setrolesState(data)
+            } else {
+                console.warn("ไม่พบฟอร์มที่บันทึก");
+
+            }
+        } catch (error) {
+            console.error("Error fetching saved forms:", error);
+        }
+    }
+    const handleChange = (e) => {
+
+        const { name, value } = e.target;
+        // console.log(value)
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value,
+        }));
+    };
+
+    // ✅ โหลดข้อมูลที่บันทึกไว้จาก Local Storage เมื่อเปิดหน้า
+    useEffect(() => {
+        const storedForms = localStorage.getItem("savedForms");
         if (storedForms) {
             setSavedForms(JSON.parse(storedForms));
         }
-    }, [userId]);
+    }, []);
 
-    const handleChange = (e) => {
-        const { name, value, type } = e.target;
+    // ✅ อัปเดต Local Storage ทุกครั้งที่ savedForms เปลี่ยนแปลง
+    useEffect(() => {
+        localStorage.setItem("savedForms", JSON.stringify(savedForms));
+    }, [savedForms]);
 
-        if (type === "number") {
-            // ตรวจสอบให้ค่าตัวเลขไม่ติดลบ
-            const numericValue = parseInt(value);
-            if (value !== "" && numericValue < 0) {
-                return; // ไม่อัปเดตค่าใน state หากเป็นค่าติดลบ
+    const fetchSavedForms = async () => {
+        if (!userId) {
+            alert("ไม่สามารถดึงข้อมูลฟอร์มได้ กรุณาลองเข้าสู่ระบบใหม่");
+            return;
+        }
+
+        try {
+            const response = await fetch(`https://localhost:7039/api/Document/GetDocumentsByUser/${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setSavedForms(data);
+            } else {
+                console.warn("ไม่พบฟอร์มที่บันทึก");
+                setSavedForms([]); // ตั้งค่าเป็นอาร์เรย์ว่างถ้าไม่มีข้อมูล
             }
-            setFormData((prevData) => ({
-                ...prevData,
-                [name]: numericValue || "", // อัปเดตค่าใน state
-            }));
-            return;
-        }
-
-        if (type === "date") {
-            // อัปเดตวันที่โดยตรง
-            setFormData((prevData) => ({
-                ...prevData,
-                [name]: value,
-            }));
-            return;
-        }
-
-        if (name === "contact") {
-            // ตรวจสอบให้กรอกเฉพาะตัวอักษรภาษาไทยและตัวเลข
-            const thaiAndNumberRegex = /^[ก-๙0-9\s]*$/;
-            if (thaiAndNumberRegex.test(value)) {
-                setFormData((prevData) => ({
-                    ...prevData,
-                    [name]: value,
-                }));
-            }
-            return;
-        }
-
-        if (name === "phone") {
-            // ตรวจสอบให้กรอกเฉพาะตัวเลขและจำกัดความยาวไม่เกิน 10 ตัว
-            const numberRegex = /^[0-9]*$/;
-            if (numberRegex.test(value) && value.length <= 10) {
-                setFormData((prevData) => ({
-                    ...prevData,
-                    [name]: value,
-                }));
-            }
-            return;
-        }
-
-        // ตรวจสอบให้กรอกเฉพาะตัวอักษรภาษาไทยและช่องว่างสำหรับฟิลด์อื่นๆ
-        const thaiRegex = /^[ก-๙\s]*$/;
-        if (thaiRegex.test(value)) {
-            setFormData((prevData) => ({
-                ...prevData,
-                [name]: value,
-            }));
+        } catch (error) {
+            console.error("Error fetching saved forms:", error);
         }
     };
-    const handleDeleteForm = (index) => {
-        const updatedForms = savedForms.filter((_, i) => i !== index);
-        setSavedForms(updatedForms);
-        localStorage.setItem(`savedForms_${userId}`, JSON.stringify(updatedForms));
-    };
-
     const handleSaveForm = () => {
-        console.log("Saving form data:", formData); // Debug ข้อมูล
-        setSavedForms((prev) => {
-            const updatedForms = [...prev, formData];
-            localStorage.setItem(`savedForms_${userId}`, JSON.stringify(updatedForms));
-            return updatedForms;
-        });
+        if (!formData.fullname || !formData.leaveTypeId) {
+            alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+            return;
+        }
+
+        const newForm = {
+            ...formData,
+            id: Date.now(),
+        };
+
+        const updatedForms = [...savedForms, newForm];
+        setSavedForms(updatedForms);
+        localStorage.setItem("savedForms", JSON.stringify(updatedForms));
 
         // รีเซ็ตฟอร์ม
         setFormData({
-            date: "",
-            month: "",
-            year: "",
-            aa: "",
-            department: "",
-            position: "",
-            leaveType: "",
-            leT: "",
-            fromDate: "",
-            toDate: "",
-            fromd: "",
-            tod: "",
-            tt: "",
-            totalDays: "",
-            totald: "",
+            userid: userId,
+            leaveTypeId: "",
+            createdate: "",
+            fullname: "",
+            rolesid: "",
             reason: "",
+            startdate: "",
+            enddate: "",
+            totalleave: 0,
+            leavedType: "",
+            leaved_startdate: "",
+            leaved_enddate: "",
+            totalleaved: 0,
+            friendeContact: "",
             contact: "",
-            phone: "",
-            sickDaysUsed: "",
-            sickDaysCurrent: "",
-            sickDaysTotal: "",
-            personalDaysUsed: "",
-            personalDaysCurrent: "",
-            personalDaysTotal: "",
-            vacationDaysUsed: "",
-            vacationDaysCurrent: "",
-            vacationDaysTotal: "",
-            maternityDaysUsed: "",
-            maternityDaysCurrent: "",
-            maternityDaysTotal: "",
-            ordinationDaysUsed: "",
-            ordinationDaysCurrent: "",
-            ordinationDaysTotal: "",
+            workingstart: "",
+            approvedDate: "",
+            hrApprovedDate: "",
+            sentToHRDate: "",
+            hrSignature: "",
+            managerName: "",
+            managerComment: "",
         });
-    };
 
-    const handleViewForm = (index) => {
-        console.log("Viewing form data:", savedForms[index]); // Debug ข้อมูล
-        const selectedForm = savedForms[index];
-        setFormData(selectedForm);
-    };
-
-    const handleSendToManager = () => {
-        if (!formData.date || !formData.department || !formData.position) {
-            return alert("กรุณากรอกข้อมูลในฟอร์มให้ครบถ้วน");
-        }
-
-        const userId = sessionStorage.getItem("userId"); // ดึง userId จาก sessionStorage
-        if (!userId) {
-            return alert("ไม่สามารถระบุพนักงานได้ กรุณาลองเข้าสู่ระบบใหม่");
-        }
-
-        // เพิ่ม id และ userId ให้ฟอร์ม
-        const updatedForm = {
-            ...formData,
-            userId, // เก็บ userId ในฟอร์ม
-            id: Date.now(), // สร้าง ID แบบไม่ซ้ำ
-        };
-
-        // ดึงข้อมูลฟอร์มจาก localStorage
-        const managerForms = JSON.parse(localStorage.getItem("managerForms")) || [];
-
-        // อัปเดตรายการฟอร์ม
-        const updatedForms = [...managerForms, updatedForm];
-
-        // บันทึกลง localStorage
-        localStorage.setItem("managerForms", JSON.stringify(updatedForms));
-
-        // เปิด Modal แจ้งเตือน
+        // แสดง Notification ว่าบันทึกสำเร็จ
+        setNotificationMessage("บันทึกฟอร์มเรียบร้อยแล้ว");
         setNotificationModalOpen(true);
     };
 
+    const handleViewForm = (form) => {
+        setFormData(form);
+    };
+    const handleSubmit = async (e) => {
+        e.preventDefault(); // ป้องกันการโหลดหน้าใหม่
+
+        try {
+            if (!userId) {
+                alert("ไม่สามารถระบุพนักงานได้ กรุณาลองเข้าสู่ระบบใหม่");
+                return;
+            }
+
+            const response = await fetch("https://localhost:7039/api/Document/SubmitForm", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ UserID: userId, ...formData })
+            });
+
+            if (response.ok) {
+                setNotificationMessage("✅ ส่งฟอร์มไปยังผู้จัดการทั่วไปสำเร็จ!");
+                setNotificationModalOpen(true);
+                setFormData({ ...formData, status: "submitted" }); // อัปเดตสถานะฟอร์ม
+            } else {
+                alert("เกิดข้อผิดพลาดในการส่งฟอร์ม");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("เกิดข้อผิดพลาดในการส่งฟอร์ม");
+        }
+    };
+
+
+    const handleSubmitToGM = async (form) => {
+        if (!form || !form.ID) {
+            alert("ไม่พบฟอร์มที่ต้องการส่ง กรุณาลองใหม่");
+            return;
+        }
+
+        const approvalData = {
+            DocumentID: form.ID,
+            ManagerName: "GM ชื่อจริง",  // แก้เป็นชื่อจริงของ GM
+            ManagerComment: "อนุมัติการลา",
+        };
+
+        try {
+            const response = await fetch("https://localhost:7039/api/Document/ApproveByManager", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(approvalData),
+            });
+
+            if (response.ok) {
+                alert("ส่งฟอร์มไปยัง GM สำเร็จ!");
+            } else {
+                const errorText = await response.text();
+                console.error("Server error:", errorText);
+                alert("เกิดข้อผิดพลาด: " + errorText);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("เกิดข้อผิดพลาดในการส่งฟอร์ม");
+        }
+    };
+
+    const sendFrom = async () => {
+        const confirmSend = window.confirm("📢 คุณต้องการส่งฟอร์มนี้ไปยังหัวหน้าจริงหรือไม่?");
+        if (!confirmSend) return;
+
+        try {
+            console.log("กำลังส่งฟอร์ม:", formData);
+
+            const response = await fetch("https://localhost:7039/api/Document/CreateDocument", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log("📌 บันทึกฟอร์มลงฐานข้อมูลสำเร็จ:", result);
+
+                setNotificationMessage("✅ ฟอร์มถูกส่งไปยังหัวหน้าสำเร็จ!");
+                setNotificationModalOpen(true);
+            } else {
+                const errorText = await response.text();
+                console.error("Server error:", errorText);
+                alert("❌ เกิดข้อผิดพลาด: " + errorText);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("❌ เกิดข้อผิดพลาดในการส่งฟอร์ม");
+        }
+    };
+
+    const handleDeleteForm = (formId) => {
+        const updatedForms = savedForms.filter((form) => form.id !== formId);
+        setSavedForms(updatedForms);
+        localStorage.setItem("savedForms", JSON.stringify(updatedForms));
+    };
 
     const handleGeneratePDF = () => {
         // Helper function สำหรับแปลงวันที่เป็นรูปแบบ DD/MM/YYYY
@@ -214,25 +279,25 @@ const LeaveForm = () => {
             content: [
                 { text: "แบบฟอร์มใบลา", style: "header" },
                 {
-                    text: `วันที่ : ${formatDate(formData.date)}`,
+                    text: `วันที่ : ${formatDate(formData.createdate)}`,
                     margin: [0, 10, 0, 10],
                     alignment: 'right' // ทำให้ข้อความชิดขวา
                 },
-                { text: `เรื่อง : ขออนุญาติลา : ${formData.aa || "-"}`, margin: [0, 10, 0, 10] },
+                { text: `เรื่อง : ขออนุญาติลา : ${leaveTypeName}`, margin: [0, 10, 0, 10] },
                 { text: `เรียน หัวหน้าแผนก/ฝ่ายบุคคล`, margin: [0, 10, 0, 10] },
                 {
                     table: {
                         widths: ["auto", "*"],
                         body: [
-                            ["ข้าพเจ้า :", `${formData.department || "-"} ตำแหน่ง ${formData.position || "-"}`],
-                            ["ขอลา :", `${formData.leaveType || "-"} เนื่องจาก ${formData.reason || "-"}`],
+                            ["ข้าพเจ้า :", `${formData.fullname || "-"} แผนก ${roleName}`],
+                            ["ขอลา :", `${leaveTypeName} เนื่องจาก ${formData.reason || "-"}`],
                             [
                                 "ตั้งแต่วันที่ :",
-                                `${formatDate(formData.fromDate)} ถึงวันที่ : ${formatDate(formData.toDate)} รวม : ${formData.totalDays || "0"} วัน`
+                                `${formatDate(formData.startdate)} ถึงวันที่ : ${formatDate(formData.enddate)} รวม : ${formData.totalleave || "0"} วัน`
                             ],
                             [
                                 "ข้าพเจ้าได้ลา :",
-                                `${formData.leT || "-"} ครั้งสุดท้าย ตั้งแต่วันที่ : ${formatDate(formData.fromd)} ถึงวันที่ : ${formatDate(formData.tod)} รวม ${formData.totald || "0"} วัน`
+                                `${leavedTypeName} ครั้งสุดท้าย ตั้งแต่วันที่ : ${formatDate(formData.leaved_startdate)} ถึงวันที่ : ${formatDate(formData.leaved_enddate)} รวม ${formData.totalleaved || "0"} วัน`
                             ],
                         ],
                     },
@@ -245,7 +310,7 @@ const LeaveForm = () => {
                         body: [
                             [
                                 "ในระหว่างลา ติดต่อข้าพเจ้าได้ที่ :",
-                                `${formData.contact || "-"}, เบอร์ติดต่อ ${formData.phone || "-"}`
+                                `${formData.friendeContact || "-"}, เบอร์ติดต่อ ${formData.contact || "-"}`
                             ],
                         ],
                     },
@@ -255,7 +320,7 @@ const LeaveForm = () => {
                 {
                     text: [
                         { text: "สถิติการลาในปีนี้ (วันเริ่มงาน)", style: "subheader" },
-                        { text: ` วันที่: ${formatDate(formData.tt)}`, style: "subheader" }
+                        { text: ` วันที่: ${formatDate(formData.workingstart)}`, style: "subheader" }
                     ]
                 },
                 {
@@ -270,33 +335,33 @@ const LeaveForm = () => {
                             ],
                             [
                                 { text: "ป่วย", alignment: 'center' },
-                                { text: formData.sickDaysUsed || "-", alignment: 'center' },
-                                { text: formData.sickDaysCurrent || "-", alignment: 'center' },
-                                { text: formData.sickDaysTotal || "-", alignment: 'center' }
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' }
                             ],
                             [
                                 { text: "กิจส่วนตัว", alignment: 'center' },
-                                { text: formData.personalDaysUsed || "-", alignment: 'center' },
-                                { text: formData.personalDaysCurrent || "-", alignment: 'center' },
-                                { text: formData.personalDaysTotal || "-", alignment: 'center' }
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' }
                             ],
                             [
                                 { text: "พักร้อน", alignment: 'center' },
-                                { text: formData.vacationDaysUsed || "-", alignment: 'center' },
-                                { text: formData.vacationDaysCurrent || "-", alignment: 'center' },
-                                { text: formData.vacationDaysTotal || "-", alignment: 'center' }
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' }
                             ],
                             [
                                 { text: "คลอดบุตร", alignment: 'center' },
-                                { text: formData.maternityDaysUsed || "-", alignment: 'center' },
-                                { text: formData.maternityDaysCurrent || "-", alignment: 'center' },
-                                { text: formData.maternityDaysTotal || "-", alignment: 'center' }
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' }
                             ],
                             [
                                 { text: "บวช", alignment: 'center' },
-                                { text: formData.ordinationDaysUsed || "-", alignment: 'center' },
-                                { text: formData.ordinationDaysCurrent || "-", alignment: 'center' },
-                                { text: formData.ordinationDaysTotal || "-", alignment: 'center' }
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' },
+                                { text: formData.historyleave || "-", alignment: 'center' }
                             ]
                         ]
                     },
@@ -449,8 +514,8 @@ const LeaveForm = () => {
                         </label>
                         <input
                             type="date"
-                            name="date"
-                            value={formData.date || ""} // ใช้ "" เมื่อค่าเป็น undefined
+                            name="createdate"
+                            value={formData.createdate || ""} // ใช้ "" เมื่อค่าเป็น undefined
                             className="input input-bordered font-FontNoto"
                             onChange={handleChange}
                             style={{
@@ -463,22 +528,21 @@ const LeaveForm = () => {
                             <label className="label">
                                 <span className="label-text font-FontNoto">เรื่อง : ขออนุญาติลา</span>
                             </label>
+
                             <select
-                                name="aa"
+                                name="leaveTypeId"
                                 className="input input-bordered font-FontNoto"
-                                value={formData.aa} // ผูกค่า value กับ state
-                                onChange={handleChange} // อัปเดตค่าใน state
-                                style={{
-                                    width: '150px', // ปรับความกว้าง
-                                }}
+                                value={formData.leaveTypeId}
+                                onChange={handleChange}
                             >
                                 <option value="" className="font-FontNoto">-- เลือกการลา --</option>
-                                <option value="ป่วย" className="font-FontNoto">ป่วย</option>
-                                <option value="กิจ" className="font-FontNoto">กิจส่วนตัว</option>
-                                <option value="พักร้อน" className="font-FontNoto">พักร้อน</option>
-                                <option value="คลอดบุตร" className="font-FontNoto">คลอดบุตร</option>
-                                <option value="บวช" className="font-FontNoto">บวช</option>
+                                {leavetpyeState.map((item) => (
+                                    <option key={item.leaveTypeid} value={item.leaveTypeid} className="font-FontNoto">
+                                        {item.leaveTypeTh}
+                                    </option>
+                                ))}
                             </select>
+
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <label className="label">
@@ -493,9 +557,9 @@ const LeaveForm = () => {
                                 </label>
                                 <input
                                     type="text"
-                                    name="department"
+                                    name="fullname"
                                     className="input input-bordered font-FontNoto"
-                                    value={formData.department} // ควบคุมค่าโดย state
+                                    value={formData.fullname} // ควบคุมค่าโดย state
                                     onChange={handleChange} // ตรวจสอบภาษาไทย
                                     style={{ width: '300px' }}
                                 />
@@ -506,18 +570,18 @@ const LeaveForm = () => {
                                     <span className="label-text font-FontNoto">แผนก :</span>
                                 </label>
                                 <select
-                                    name="position"
+                                    name="rolesid"
                                     className="input input-bordered font-FontNoto" // เพิ่ม class เพื่อกำหนดฟอนต์
-                                    value={formData.position}
+                                    value={formData.rolesid}
                                     onChange={handleChange}
                                     style={{ width: '300px' }}
                                 >
                                     <option value="" className="font-FontNoto">-- เลือกแผนก --</option>
-                                    <option value="นักพัฒนาระบบ" className="font-FontNoto">นักพัฒนาระบบ</option>
-                                    <option value="นักวิเคราะห์ธุรกิจ" className="font-FontNoto">นักวิเคราะห์ธุรกิจ</option>
-                                    <option value="ทรัพยากรบุคคล" className="font-FontNoto">ทรัพยากรบุคคล</option>
-                                    <option value="ผู้จัดการทั่วไป" className="font-FontNoto">ผู้จัดการทั่วไป</option>
-                                    <option value="พนักงาน" className="font-FontNoto">พนักงาน</option>
+                                    {rolesState.map((item) => (
+                                        <option key={item.rolesid} value={item.rolesid} className="font-FontNoto">
+                                            {item.rolesname}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -527,19 +591,21 @@ const LeaveForm = () => {
                         <label className="label">
                             <span className="label-text font-FontNoto">ขอลา :</span>
                         </label>
-                        {["ป่วย", "กิจส่วนตัว", "พักร้อน", "คลอดบุตร", "บวช"].map((type) => (
-                            <label key={type} className="flex items-center gap-2">
-                                <input
-                                    type="radio"
-                                    name="leaveType"
-                                    value={type}
-                                    checked={formData.leaveType === type} // ตรวจสอบสถานะ
-                                    className="radio"
-                                    onChange={handleChange}
-                                />
-                                <span className="font-FontNoto" style={{ color: 'black' }}>{type}</span>
-                            </label>
-                        ))}
+
+                        {
+                            leavetpyeState.map((item) => (
+                                <label key={item.leaveTypeid} className="flex items-center gap-2">
+                                    <input
+                                        type="radio"
+                                        name="leaveTypeId"
+                                        value={item.leaveTypeid}
+                                        checked={formData.leaveTypeId == item.leaveTypeid} // ตรวจสอบสถานะ
+                                        className="radio"
+                                        onChange={handleChange}
+                                    />
+                                    <span className="font-FontNoto" style={{ color: 'black' }}>{item.leaveTypeTh}</span>
+                                </label>
+                            ))}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -559,14 +625,14 @@ const LeaveForm = () => {
                         <label className="label" style={{ whiteSpace: 'nowrap' }}>
                             <span className="label-text font-FontNoto">ตั้งแต่วันที่ :</span>
                         </label>
-                        <input type="date" name="fromDate" value={formData.fromDate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
+                        <input type="date" name="startdate" value={formData.startdate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
                             colorScheme: "light",
                         }} />
 
                         <label className="label" style={{ whiteSpace: 'nowrap' }}>
                             <span className="label-text font-FontNoto">ถึงวันที่ :</span>
                         </label>
-                        <input type="date" name="toDate" value={formData.toDate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
+                        <input type="date" name="enddate" value={formData.enddate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
                             colorScheme: "light",
                         }} />
 
@@ -576,14 +642,14 @@ const LeaveForm = () => {
                         <div className="flex items-center">
                             <input
                                 type="number"
-                                name="totalDays"
+                                name="total_start_leave"
                                 className="input input-bordered mr-2"
-                                value={formData.totalDays || ''} // เพิ่มค่าเริ่มต้นเพื่อหลีกเลี่ยง undefined
+                                value={formData.totalleave || ''} // เพิ่มค่าเริ่มต้นเพื่อหลีกเลี่ยง undefined
                                 onChange={(e) => {
                                     const value = Math.max(0, Number(e.target.value)); // ใช้ Number เพื่อแปลงค่า
                                     setFormData((prevData) => ({
                                         ...prevData,
-                                        totalDays: value, // อัปเดตค่าใน state
+                                        totalleave: value, // อัปเดตค่าใน state
                                     }));
                                 }}
                                 min="0" // จำกัดค่าขั้นต่ำเป็น 0
@@ -597,33 +663,34 @@ const LeaveForm = () => {
                         <label className="label">
                             <span className="label-text font-FontNoto">ข้าพเจ้าได้ลา :</span>
                         </label>
-                        {["ป่วย", "กิจส่วนตัว", "พักร้อน", "คลอดบุตร", "บวช"].map((type) => (
-                            <label key={type} className="flex items-center gap-2">
-                                <input
-                                    type="radio"
-                                    name="leT"
-                                    value={type}
-                                    checked={formData.leT === type} // ตรวจสอบสถานะที่เลือก
-                                    className="radio"
-                                    onChange={handleChange}
-                                />
-                                <span className="font-FontNoto" style={{ color: 'black' }}>{type}</span>
-                            </label>
-                        ))}
+                        {
+                            leavetpyeState.map((item) => (
+                                <label key={item.leaveTypeid} className="flex items-center gap-2">
+                                    <input
+                                        type="radio"
+                                        name="leavedType"
+                                        value={item.leaveTypeid}
+                                        checked={formData.leavedType == item.leaveTypeid} // ตรวจสอบสถานะ
+                                        className="radio"
+                                        onChange={handleChange}
+                                    />
+                                    <span className="font-FontNoto" style={{ color: 'black' }}>{item.leaveTypeTh}</span>
+                                </label>
+                            ))}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <label className="label" style={{ whiteSpace: 'nowrap' }}>
                             <span className="label-text font-FontNoto">ครั้งสุดท้าย ตั้งแต่วันที่ :</span>
                         </label>
-                        <input type="date" name="fromd" value={formData.fromd || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
+                        <input type="date" name="leaved_startdate" value={formData.leaved_startdate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
                             colorScheme: "light",
                         }} />
 
                         <label className="label" style={{ whiteSpace: 'nowrap' }}>
                             <span className="label-text font-FontNoto">ถึงวันที่ :</span>
                         </label>
-                        <input type="date" name="tod" value={formData.tod || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
+                        <input type="date" name="leaved_enddate" value={formData.leaved_enddate || ''} className="input input-bordered font-FontNoto" onChange={handleChange} style={{
                             colorScheme: "light",
                         }} />
 
@@ -634,16 +701,10 @@ const LeaveForm = () => {
                             <div className="flex items-center">
                                 <input
                                     type="number"
-                                    name="totald"
+                                    name="totalleaved"
                                     className="input input-bordered mr-2"
-                                    value={formData.totald || ''} // เพิ่มค่าเริ่มต้นเพื่อหลีกเลี่ยง undefined
-                                    onChange={(e) => {
-                                        const value = Math.max(0, Number(e.target.value)); // ใช้ Number เพื่อแปลงค่าจาก string เป็น number
-                                        setFormData((prevData) => ({
-                                            ...prevData,
-                                            totald: value, // อัปเดตค่าใน state
-                                        }));
-                                    }}
+                                    value={formData.totalleaved || ''} // เพิ่มค่าเริ่มต้นเพื่อหลีกเลี่ยง undefined
+                                    onChange={handleChange}
                                     min="0" // จำกัดค่าขั้นต่ำเป็น 0
                                     style={{ width: '50%' }}
                                 />
@@ -660,9 +721,9 @@ const LeaveForm = () => {
                             </label>
                             <input
                                 type="text"
-                                name="contact"
-                                className="input input-bordered flex-1"
-                                value={formData.contact} // ควบคุมค่าโดย state
+                                name="friendeContact"
+                                className="input input-bordered flex-1 font-FontNoto"
+                                value={formData.friendeContact}
                                 onChange={handleChange} // ตรวจสอบภาษาไทยและตัวเลข
                             />
                             <label className="label">
@@ -670,9 +731,9 @@ const LeaveForm = () => {
                             </label>
                             <input
                                 type="text"
-                                name="phone"
-                                className="input input-bordered flex-1"
-                                value={formData.phone} // ควบคุมค่าโดย state
+                                name="contact"
+                                className="input input-bordered flex-1 font-FontNoto"
+                                value={formData.contact} // ควบคุมค่าโดย state
                                 onChange={handleChange} // ตรวจสอบตัวเลข 10 ตัว
                                 maxLength="10" // จำกัดความยาวสูงสุด 10 ตัวอักษร
                             />
@@ -684,8 +745,8 @@ const LeaveForm = () => {
                         </h2>
                         <input
                             type="date"
-                            name="tt"
-                            value={formData.tt || ''}
+                            name="workingstart"
+                            value={formData.workingstart || ''}
                             className="input input-bordered font-FontNoto"
                             onChange={handleChange}
                             style={{
@@ -937,6 +998,7 @@ const LeaveForm = () => {
                             </tbody>
                         </table>
                     </div>
+
                     <div className="flex justify-center gap-4">
                         <button
                             type="button"
@@ -945,48 +1007,36 @@ const LeaveForm = () => {
                         >
                             บันทึกฟอร์ม
                         </button>
-
                         <button
                             type="button"
                             className="btn btn-outline btn-sm font-FontNoto"
                             onClick={() => setFormData({
-                                date: "",
-                                month: "",
-                                year: "",
-                                aa: "",
-                                department: "",
-                                position: "",
-                                leaveType: "",
-                                leT: "",
-                                fromDate: "",
-                                toDate: "",
-                                fromd: "",
-                                tod: "",
-                                tt: "",
-                                totalDays: "",
-                                totald: "",
+                                leaveTypeId: "",
+                                createdate: "",
+                                fullname: "",
+                                rolesid: "",
                                 reason: "",
+                                startdate: "",
+                                enddate: "",
+                                totalleave: 0,
+                                leavedType: "",
+                                leaved_startdate: "",
+                                leaved_enddate: "",
+                                totalleaved: 0,
+                                friendeContact: "",
                                 contact: "",
-                                phone: "",
-                                sickDaysUsed: "",
-                                sickDaysCurrent: "",
-                                sickDaysTotal: "",
-                                personalDaysUsed: "",
-                                personalDaysCurrent: "",
-                                personalDaysTotal: "",
-                                vacationDaysUsed: "",
-                                vacationDaysCurrent: "",
-                                vacationDaysTotal: "",
-                                maternityDaysUsed: "",
-                                maternityDaysCurrent: "",
-                                maternityDaysTotal: "",
-                                ordinationDaysUsed: "",
-                                ordinationDaysCurrent: "",
-                                ordinationDaysTotal: "",
+                                workingstart: "",
+                                approvedDate: "",
+                                hrApprovedDate: "",
+                                sentToHRDate: "",
+                                hrSignature: "",
+                                managerName: "",
+                                managerComment: "",
                             })}
                         >
                             ฟอร์มใหม่
                         </button>
+
                     </div>
                     <div className="flex gap-4">
                         <button
@@ -997,13 +1047,14 @@ const LeaveForm = () => {
                             สร้าง PDF
                         </button>
 
-                        <button
+                        <button className="btn btn-warning w-1/2 font-FontNoto"
                             type="button"
-                            className="btn btn-warning w-1/2 font-FontNoto"
-                            onClick={handleSendToManager}
+                            onClick={() => sendFrom()} // ✅ ใช้ฟังก์ชันที่แก้ไขแล้ว
                         >
                             กดส่งฟอร์มไปยังหัวหน้า
                         </button>
+
+
                     </div>
                 </form>
                 <div>
@@ -1019,22 +1070,16 @@ const LeaveForm = () => {
                             </thead>
                             <tbody className="text-center font-FontNoto">
                                 {savedForms.map((form, index) => (
-                                    <tr key={index}>
+                                    <tr key={form.id}>
                                         <td>{index + 1}</td>
-                                        <td className="font-FontNoto">แบบฟอร์มใบลา -{index + 1}</td>
+                                        <td className="font-FontNoto">{form.fullname} - {form.leaveTypeId}</td>
                                         <td className="flex justify-center items-center gap-2">
-                                            <button
-                                                onClick={() => handleViewForm(index)}
-                                                className="btn btn-sm btn-outline btn-success text-center font-FontNoto"
-                                            >
+                                            <button onClick={() => handleViewForm(form)} className="btn btn-sm btn-outline btn-success">
                                                 ดู
                                             </button>
                                             <button
-                                                className="btn btn-sm btn-outline btn-error font-FontNoto"
-                                                onClick={() => {
-                                                    setItemToDelete(index); // กำหนด index ฟอร์มที่ต้องการลบ
-                                                    document.getElementById("delete_modal").showModal(); // แสดง Modal
-                                                }}
+                                                className="btn btn-sm btn-outline btn-error"
+                                                onClick={() => setSavedForms(savedForms.filter(f => f.id !== form.id))}
                                             >
                                                 ลบ
                                             </button>
@@ -1060,7 +1105,21 @@ const LeaveForm = () => {
                             </div>
                         </dialog>
                     )}
-
+                    {isNotificationModalOpen && (
+                        <dialog open className="modal">
+                            <div className="modal-box">
+                                <h3 className="font-bold text-lg font-FontNoto">{notificationMessage}</h3>
+                                <div className="modal-action">
+                                    <button
+                                        className="btn btn-outline btn-success font-FontNoto"
+                                        onClick={() => setNotificationModalOpen(false)}
+                                    >
+                                        ตกลง
+                                    </button>
+                                </div>
+                            </div>
+                        </dialog>
+                    )}
                     {/* Modal for delete confirmation */}
                     <dialog id="delete_modal" className="modal">
                         <div className="modal-box">
@@ -1076,12 +1135,15 @@ const LeaveForm = () => {
                                 <button
                                     className="btn btn-outline btn-error font-FontNoto"
                                     onClick={() => {
-                                        handleDeleteForm(itemToDelete); // ลบฟอร์มตาม index
-                                        document.getElementById("delete_modal").close(); // ปิด Modal
+                                        if (itemToDelete) {
+                                            handleDeleteForm(itemToDelete);
+                                            document.getElementById("delete_modal").close();
+                                        }
                                     }}
                                 >
                                     ลบ
                                 </button>
+
                             </div>
                         </div>
                     </dialog>

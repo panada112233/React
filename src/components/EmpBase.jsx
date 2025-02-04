@@ -10,62 +10,66 @@ const EmpBase = () => {
   // ดึง userID จาก sessionStorage
   const userID = sessionStorage.getItem("userId") || "";
 
+
   useEffect(() => {
-    // ตรวจสอบ role จาก sessionStorage
     const storedRole = sessionStorage.getItem("role");
-    if (storedRole) {
-      setRole(storedRole);
-      console.log("Role from sessionStorage:", storedRole);
-    } else {
-      // ดึง role จาก API หากยังไม่มีใน sessionStorage
-      const fetchRole = async () => {
-        try {
-          const response = await axios.get("/api/admin/GetUserRole");
-          if (response.status === 200) {
-            const userRole = response.data.Role;
-            setRole(userRole);
-            sessionStorage.setItem("role", userRole); // เก็บ role ใน sessionStorage
-          } else {
-            console.error("Failed to fetch user role");
-          }
-        } catch (error) {
-          console.error("Error fetching user role:", error);
-        }
-      };
-      fetchRole();
-    }
-  }, []);
-
-  useEffect(() => {
     if (userID) {
-      const fetchProfileImageAndUserData = async () => {
-        try {
-          // ดึงข้อมูลโปรไฟล์รูปภาพ
-          const profileResponse = await axios.get(
-            `https://localhost:7039/api/Files/GetProfileImage?userID=${userID}`
-          );
-          if (profileResponse.status === 200) {
-            const fullImageUrl = `https://localhost:7039/api/Files/GetProfileImage?userID=${userID}`;
-            setCurrentProfileImage(fullImageUrl);
-          }
-
-          // ดึงข้อมูลผู้ใช้งาน
-          const userResponse = await axios.get(
-            `https://localhost:7039/api/Users/Getbyid/${userID}`
-          );
-          if (userResponse.status === 200) {
-            const userData = userResponse.data;
-            setUserName(
-              `${userData.firstName} ${userData.lastName}` || "ไม่ทราบชื่อ"
-            );
-          }
-        } catch (error) {
-          console.error("Error fetching profile image or user data:", error);
-        }
-      };
       fetchProfileImageAndUserData();
+      if (storedRole) {
+        setRole(storedRole);
+        console.log("Role from sessionStorage:", storedRole);
+      } else {
+        fetchRole();
+      }
     }
-  }, [userID]); 
+
+  }, [userID]);
+
+  const fetchRole = async () => {
+    try {
+      const response = await axios.get("/api/admin/GetUserRole");
+      if (response.status === 200) {
+        const userRole = response.data.Role;
+        setRole(userRole);
+        sessionStorage.setItem("role", userRole); // เก็บ role ใน sessionStorage
+      } else {
+        console.error("Failed to fetch user role");
+      }
+    } catch (error) {
+      console.error("Error fetching user role:", error);
+    }
+  };
+
+  const fetchProfileImageAndUserData = async () => {
+    try {
+   
+      // ดึงข้อมูลโปรไฟล์รูปภาพ
+      const profileResponse = await axios.get(
+        `https://localhost:7039/api/Files/GetProfileImage?userID=${userID}`
+      );
+      setCurrentProfileImage(profileResponse)
+    
+      if (profileResponse.status === 200) {
+        const fullImageUrl = `https://localhost:7039/api/Files/GetProfileImage?userID=${userID}`;
+
+        setCurrentProfileImage(fullImageUrl);
+      }
+
+      // ดึงข้อมูลผู้ใช้งาน
+      const userResponse = await axios.get(
+        `https://localhost:7039/api/Users/Getbyid/${userID}`
+      );
+      console.log(userResponse)
+      if (userResponse.status === 200) {
+        const userData = userResponse.data;
+        setUserName(
+          `${userData.firstName} ${userData.lastName}` || "ไม่ทราบชื่อ"
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching profile image or user data:", error);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -135,7 +139,7 @@ const EmpBase = () => {
                     ใบลาพนักงาน
                   </Link>
                 </li>
-                
+
               </>
             ) : null}
             {role === "GM" ? (

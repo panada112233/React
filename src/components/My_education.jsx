@@ -89,6 +89,7 @@ function MyEducation() {
       );
       setModalConfirmAction(null);
       setIsModalOpen(true);
+      setEducations(newEducation)
       return;
     }
 
@@ -112,7 +113,11 @@ function MyEducation() {
           "https://localhost:7039/api/Educations/Insert",
           { ...newEducation, userID }
         );
-        setEducations([...educations, response.data]);
+
+        educations.push({
+          ...newEducation
+        });
+
       }
 
       setNewEducation({

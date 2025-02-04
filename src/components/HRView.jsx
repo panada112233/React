@@ -13,6 +13,11 @@ const HRView = () => {
     const [selectedFormForDelete, setSelectedFormForDelete] = useState(null); // ฟอร์มที่เลือกเพื่อลบ
     const [selectedFormForDetails, setSelectedFormForDetails] = useState(null); // ฟอร์มที่เลือกดูรายละเอียด
     const currentUserRole = sessionStorage.getItem("role");
+    const [newDocument, setNewDocument] = useState({
+        category: '',
+        file: null,
+        description: '',
+    });
 
     // โหลดข้อมูลจาก localStorage เมื่อเริ่มต้น
     const loadLocalStorageData = () => {
@@ -62,7 +67,7 @@ const HRView = () => {
         setFormToApprove(null); // ปิด Modal
         setHrName(""); // ล้างค่าชื่อ HR
     };
-    
+
     const deleteFormForHR = (formId) => {
         const savedFormsForHR = JSON.parse(localStorage.getItem("sentToEmployeesFormsForHR")) || [];
         const updatedFormsForHR = savedFormsForHR.filter((form) => form.id !== formId);
@@ -70,24 +75,37 @@ const HRView = () => {
         localStorage.setItem("sentToEmployeesFormsForHR", JSON.stringify(updatedFormsForHR));
         console.log(`Form with ID ${formId} has been deleted for HR only.`);
     };
-    
+
     const sendDocumentToEmployee2 = (form) => {
         const userIdFromForm = form.userId; // เก็บ userId จากฟอร์ม
         const savedDocumentsForEmployee = JSON.parse(localStorage.getItem("sentToEmployeesFormsForEmployee")) || [];
-    
+
         // เพิ่มเอกสารใหม่พร้อมสถานะ "อัปโหลดอัตโนมัติ"
         const updatedEmployeeDocs = [
             ...savedDocumentsForEmployee,
             { ...form, userId: userIdFromForm, uploadedAutomatically: true } // เพิ่ม flag
         ];
-    
+
         // อัปเดตใน LocalStorage
         localStorage.setItem("sentToEmployeesFormsForEmployee", JSON.stringify(updatedEmployeeDocs));
-    
+
         console.log(`Document automatically uploaded for employee ID: ${userIdFromForm}`);
+
+
+
+
+        const formData = new FormData();
+        formData.append('File', newDocument.file);
+        formData.append('Category', newDocument.category);
+        formData.append('Description', newDocument.description);
+        formData.append('UserID', userID);
+
+
+
+
     };
-    
-    
+
+
     // ฟังก์ชันแปลงฟอร์มเป็น PDF และดาวน์โหลด
     const downloadPDF = (form) => {
         const content = `ฟอร์มพนักงาน\n\nชื่อพนักงาน: ${form.department}\nตำแหน่ง: ${form.position}\nวันที่ลา: ${form.fromDate} ถึง ${form.toDate}\nความคิดเห็นหัวหน้า: ${form.managerComment}\nความคิดเห็น HR: ${form.hrComment || ""}`;
@@ -117,7 +135,7 @@ const HRView = () => {
     const closeDeleteModal = () => {
         setSelectedFormToDelete(null);
     };
- 
+
     return (
         <div className="p-6">
             {/* ฟอร์มที่หัวหน้าอนุมัติ */}
@@ -240,7 +258,7 @@ const HRView = () => {
                                             onClick={() => sendDocumentToEmployee2(form)} // เรียกใช้ฟังก์ชันเมื่อกดปุ่ม
                                         >
                                             ส่งให้พนักงาน
-                                        </button> 
+                                        </button>
 
                                         <button
                                             className="btn btn-sm btn-outline btn-warning ml-2"

@@ -102,8 +102,12 @@ function MyExperience() {
         };
 
         const response = await axios.request(config);
-        setExperiences([...experiences, response.data]);
-      }
+
+        experiences.push({
+          ...newExperience
+        });
+
+      }      
       setNewExperience({
         companyName: "",
         jobTitle: "",

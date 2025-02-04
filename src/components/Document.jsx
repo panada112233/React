@@ -54,6 +54,7 @@ function Document() {
 
       setDocuments(combinedDocuments); // ตั้งค่าเอกสาร
       setFilteredDocuments(combinedDocuments); // ใช้สำหรับฟิลเตอร์
+      
     } catch (error) {
       console.error("Error fetching documents:", error);
       alert("ไม่สามารถโหลดข้อมูลเอกสารได้");
