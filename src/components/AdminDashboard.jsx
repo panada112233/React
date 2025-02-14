@@ -42,6 +42,8 @@ const AdminDashboard = () => {
   const [uploadMessage, setUploadMessage] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [userinfostate, setuserinfoState] = useState(0);
+  const [leaveData, setLeaveData] = useState([]); // ✅ เพิ่มตัวแปรเก็บข้อมูลใบลา
+
 
   const categoryMapping = {
     Certificate: 'ใบลาป่วย',
@@ -52,6 +54,14 @@ const AdminDashboard = () => {
     Doc: 'เอกสารส่วนตัว',
     Others: 'อื่นๆ',
   };
+
+  const categoryMappingg = {
+    "A461E72F-B9A3-4F9D-BF69-1BBE6EA514EC": "ใบลาป่วย",
+    "6CF7C54A-F9BA-4151-A554-6487FDD7ED8D": "ใบลาพักร้อน",
+    "1799ABEB-158C-479E-A9DC-7D45E224E8ED": "ใบลากิจ",
+    "DAA14555-28E7-497E-B1D8-E0DA1F1BE283": "ใบลาคลอด",
+    "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "ใบลาบวช",
+};
 
   const fectUserinfo = async () => {
     try {
@@ -79,25 +89,46 @@ const AdminDashboard = () => {
     const fetchDocuments = async () => {
       try {
         const response = await axios.get("https://localhost:7039/api/Files");
-        const counts = response.data.reduce((acc, doc) => {
+        const leaveResponse = await axios.get("https://localhost:7039/api/Document/GetAllCommitedDocuments");
+
+        setLeaveData(leaveResponse.data); // ✅ เก็บข้อมูลใบลา
+
+        const counts = {
+          'ใบลาป่วย': 0,
+          'ใบลากิจ': 0,
+          'ใบลาพักร้อน': 0,
+          'ใบลาคลอด': 0,
+          'ใบลาบวช': 0,
+          'เอกสารส่วนตัว': 0,
+          'อื่นๆ': 0
+        };
+
+        // ✅ นับจำนวนเอกสารอัปโหลด
+        response.data.forEach((doc) => {
           const category = categoryMapping[doc.category] || 'อื่นๆ';
-          acc[category] = (acc[category] || 0) + 1;
-          return acc;
-        }, { 'ใบลาป่วย': 0, 'ใบลากิจ': 0, 'ใบลาพักร้อน': 0, 'ใบลาคลอด': 0, 'ใบลาบวช': 0, 'เอกสารส่วนตัว': 0, 'อื่นๆ': 0 });
+          counts[category] = (counts[category] || 0) + 1;
+        });
+
+        // ✅ นับจำนวนใบลา และรวมเข้ากับประเภทที่ตรงกัน
+        leaveResponse.data.forEach((doc) => {
+          const category = categoryMappingg[doc.leaveTypeId.toUpperCase()] || "อื่นๆ";
+          counts[category] = (counts[category] || 0) + 1;
+        });
 
         setCategoryCounts(counts);
         setFilesData(response.data);
         setStatistics(prevStats => ({
           ...prevStats,
-          totalDocuments: response.data.length,
+          totalDocuments: response.data.length + leaveResponse.data.length, // ✅ รวมใบลาเข้าไปด้วย
         }));
 
-        await fectUserinfo()
+        await fectUserinfo();
 
       } catch (error) {
         console.error("Error fetching document data:", error);
       }
     };
+
 
     const fetchData = async () => {
       try {
@@ -270,31 +301,53 @@ const AdminDashboard = () => {
     const months = Array.from({ length: 12 }, (_, i) => `เดือน ${i + 1}`);
     const categories = Object.values(categoryMapping);
 
-    // เตรียมข้อมูลสำหรับแต่ละหมวดหมู่ในแต่ละเดือน
+    // ✅ รวม `categoryMapping` กับ `categoryMappingg`
+    const mergedCategoryMapping = {
+      ...categoryMapping,
+      ...categoryMappingg,
+    };
+
+    console.log("📊 Merged Category Mapping:", mergedCategoryMapping);
+
+    // ✅ เตรียมข้อมูลแต่ละหมวดหมู่สำหรับแต่ละเดือน
     const categoryData = categories.map(category => {
-      return Array.from({ length: 12 }, (_, i) =>
-        filesData.filter(
+      return Array.from({ length: 12 }, (_, i) => {
+        // ✅ นับจำนวนเอกสารอัปโหลด
+        const uploadCount = filesData.filter(
           f =>
             new Date(f.uploadDate).getFullYear() === selectedYear &&
             new Date(f.uploadDate).getMonth() === i &&
             categoryMapping[f.category] === category
-        ).length
-      );
+        ).length;
+
+        // ✅ นับจำนวนใบลา
+        const leaveCount = leaveData.filter(
+          f =>
+            new Date(f.startdate).getFullYear() === selectedYear &&
+            new Date(f.startdate).getMonth() === i &&
+            categoryMappingg[f.leaveTypeId.toUpperCase()] === category
+        ).length;
+
+        return uploadCount + leaveCount; // ✅ รวมค่าทั้งสอง
+      });
     });
+
+    console.log("📊 categoryData:", categoryData);
+
     return {
-      labels: months,
+      labels: months, // ✅ ใช้ชื่อเดือนเป็นแกน X
       datasets: categories.map((category, index) => ({
-        label: category,
-        data: categoryData[index],
+        label: category, // ✅ ชื่อประเภทเอกสาร
+        data: categoryData[index], // ✅ จำนวนเอกสารในแต่ละเดือน
         backgroundColor: [
-          'rgba(0, 255, 0, 1)', // สีเขียวสด
-          'rgba(0, 194, 233, 1)', // สีน้ำเงินสด
-          'rgba(255, 0, 0, 1)', // สีแดงสด
+          'rgba(0, 255, 0, 1)',
+          'rgba(0, 194, 233, 1)',
+          'rgba(255, 0, 0, 1)',
           'rgba(255, 20, 147, 0.7)',
-          'rgba(255, 252, 0, 1)', // สีเหลืองสด
-          ' rgba(152, 60, 0, 1)',
+          'rgba(255, 252, 0, 1)',
+          'rgba(152, 60, 0, 1)',
           'rgba(145, 0, 203, 1)',
-        ][index], // เลือกสีตามลำดับหมวดหมู่
+        ][index],
       })),
       options: {
         responsive: true,

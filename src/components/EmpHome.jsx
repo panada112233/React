@@ -35,6 +35,14 @@ const EmpHome = () => {
     Others: 'อื่นๆ',
   };
 
+  const categoryMappingg = {
+    "A461E72F-B9A3-4F9D-BF69-1BBE6EA514EC": "ใบลาป่วย", 
+    "6CF7C54A-F9BA-4151-A554-6487FDD7ED8D": "ใบลาพักร้อน",
+    "1799ABEB-158C-479E-A9DC-7D45E224E8ED": "ใบลากิจ",
+    "DAA14555-28E7-497E-B1D8-E0DA1F1BE283": "ใบลาคลอด",
+    "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "ใบลาบวช",
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -50,15 +58,19 @@ const EmpHome = () => {
         const documentsRequest = axios.get('https://localhost:7039/api/Files/Document', {
           params: { userID: id }
         });
+        const leaveDocumentsRequest = axios.get(`https://localhost:7039/api/Document/GetCommitedDocumentsByUser/${id}`);
+
+        
         const educationsRequest = axios.get(`https://localhost:7039/api/Educations/Getbyid/${id}`);
         const experiencesRequest = axios.get(`https://localhost:7039/api/WorkExperiences/Getbyid/${id}`);
-
-        const [userResponse, documentsResponse, educationsResponse, experiencesResponse] = await Promise.all([
+        const [userResponse, documentsResponse, educationsResponse, experiencesResponse, leaveDocumentsResponse] = await Promise.all([
           userRequest,
           documentsRequest,
           educationsRequest,
           experiencesRequest,
+          leaveDocumentsRequest
         ]);
+        
         // ตั้งชื่อผู้ใช้จาก API
         if (userResponse.status === 200) {
           const userData = userResponse.data;
@@ -85,6 +97,12 @@ const EmpHome = () => {
             acc[category] = (acc[category] || 0) + 1;
             return acc;
           }, {});
+          
+          // นับเอกสารใบลา
+          leaveDocumentsResponse.data.forEach((doc) => {
+            const category = categoryMappingg[doc.leaveTypeId.toUpperCase()] || "ไม่ระบุหมวดหมู่";
+            counts[category] = (counts[category] || 0) + 1;
+          });
 
           setCategoryCounts(counts);
         }

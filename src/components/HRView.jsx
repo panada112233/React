@@ -1,140 +1,232 @@
+import axios from "axios";
 import React, { useState, useEffect } from "react";
 
 const HRView = () => {
-    const [approvedForms, setApprovedForms] = useState([]); // ฟอร์มที่หัวหน้าอนุมัติ
     const [hrApprovedForms, setHrApprovedForms] = useState([]); // ฟอร์มที่ HR เซ็นชื่ออนุมัติ
-    const [sentToEmployeesForms, setSentToEmployeesForms] = useState([]); // ฟอร์มที่ส่งให้พนักงาน
     const [hrForms, setHrForms] = useState([]);
     const [formToApprove, setFormToApprove] = useState(null);
-    const [selectedHRForm, setSelectedHRForm] = useState(null); // ฟอร์ม HR ที่เลือกดู
-    const [selectedFormToDelete, setSelectedFormToDelete] = useState(null); // ฟอร์มที่เลือกเพื่อลบ
     const [hrName, setHrName] = useState(""); // เพิ่ม state สำหรับชื่อ HR
     const [selectedFormForEdit, setSelectedFormForEdit] = useState(null); // ฟอร์มที่เลือกแก้ไข
-    const [selectedFormForDelete, setSelectedFormForDelete] = useState(null); // ฟอร์มที่เลือกเพื่อลบ
     const [selectedFormForDetails, setSelectedFormForDetails] = useState(null); // ฟอร์มที่เลือกดูรายละเอียด
     const currentUserRole = sessionStorage.getItem("role");
+    const [roleState, setRolesState] = useState(null)
+    const [historyState, sethistoryState] = useState(null)
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMessage, setModalMessage] = useState("");
+    const [leaveTypesState, setleaveTypesState] = useState(null)
     const [newDocument, setNewDocument] = useState({
         category: '',
         file: null,
         description: '',
     });
 
-    // โหลดข้อมูลจาก localStorage เมื่อเริ่มต้น
-    const loadLocalStorageData = () => {
-        const savedForms = {
-            hrForms: JSON.parse(localStorage.getItem("hrForms")) || [],
-            hrApprovedForms: JSON.parse(localStorage.getItem("hrApprovedForms")) || [],
-            sentToEmployeesForms: JSON.parse(localStorage.getItem("sentToEmployeesForms")) || [],
-        };
-
-        console.log("All HR Forms in localStorage:", savedForms.hrForms);
-        console.log("Approved HR Forms in localStorage:", savedForms.hrApprovedForms);
-
-        // Set all forms for HR without filtering
-        setHrForms(savedForms.hrForms);
-        setHrApprovedForms(savedForms.hrApprovedForms);
-        setSentToEmployeesForms(savedForms.sentToEmployeesForms);
-    };
-
     useEffect(() => {
-        loadLocalStorageData();
+        //  loadLocalStorageData();
+        fetchHRForms();
+        fetchRole()
+        fetchLeaveType()
     }, []);
+    const fetchRole = async () => {
+        const roleRes = await axios.get(`https://localhost:7039/api/Users/GetRoles`);
 
-    const handleApprove = () => {
-        if (!/^[ก-๙\s]+$/.test(hrName)) {
-            alert("กรุณากรอกชื่อ HR เป็นภาษาไทย!");
+        setRolesState(roleRes.data)
+    }
+    const fetchLeaveType = async () => {
+        const res = await axios.get(`https://localhost:7039/api/Document/GetLeaveTypes`);
+
+        setleaveTypesState(res.data)
+    }
+    const handleApprove = async () => {
+        if (!hrName) {
+            alert("กรุณากรอกชื่อ HR ก่อนอนุมัติ!");
             return;
         }
 
-        const updatedForm = {
-            ...formToApprove,
-            hrApprovedDate: new Date().toLocaleDateString(),
-            hrSignature: hrName,
+        if (!formToApprove || !formToApprove.documentId) {
+            alert("ไม่พบฟอร์มที่ต้องการอนุมัติ");
+            return;
+        }
+
+        const approvalData = {
+            DocumentID: formToApprove.documentId,
+            HRSignature: hrName,
         };
 
-        // เพิ่มฟอร์มที่เซ็นชื่อแล้วใน hrApprovedForms
-        const updatedApprovedForms = [...hrApprovedForms, updatedForm];
-        const remainingHrForms = hrForms.filter((f) => f.id !== formToApprove.id);
+        console.log("✅ Data ที่ส่งไป API:", approvalData);
 
-        setHrApprovedForms(updatedApprovedForms);
-        setHrForms(remainingHrForms); // เอาฟอร์มออกจาก hrForms
+        try {
+            const response = await fetch("https://localhost:7039/api/Document/ApproveByHR", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(approvalData),
+            });
 
-        // บันทึกข้อมูลลง localStorage
-        localStorage.setItem("hrApprovedForms", JSON.stringify(updatedApprovedForms));
-        localStorage.setItem("hrForms", JSON.stringify(remainingHrForms));
+            if (response.ok) {
+                // 1️⃣ ลบฟอร์มที่อนุมัติแล้วออกจาก `hrForms`
+                setHrForms(prevForms => prevForms.filter(form => form.documentId !== formToApprove.documentId));
 
-        // alert(`ฟอร์มของ ${formToApprove.department} ได้รับการเซ็นชื่อแล้ว`);
-        setFormToApprove(null); // ปิด Modal
-        setHrName(""); // ล้างค่าชื่อ HR
+                // 2️⃣ เพิ่มฟอร์มที่อนุมัติแล้วลงใน `hrApprovedForms`
+                setHrApprovedForms(prevApprovedForms => [...prevApprovedForms, {
+                    ...formToApprove,
+                    hrSignature: hrName,
+                    hrApprovedDate: new Date().toISOString() // ✅ อัปเดตวันที่อนุมัติ
+                }]);
+
+                // 3️⃣ เคลียร์ค่าฟอร์มที่กำลังอนุมัติและชื่อ HR
+                setFormToApprove(null);
+                setHrName("");
+
+                console.log("✅ ฟอร์มถูกอนุมัติและย้ายไปแสดงข้างล่างแล้ว!");
+            } else {
+                const errorText = await response.text();
+                console.error("❌ Server error:", errorText);
+                alert("❌ เกิดข้อผิดพลาด: " + errorText);
+            }
+        } catch (error) {
+            console.error("❌ Error:", error);
+        }
     };
 
-    const deleteFormForHR = (formId) => {
-        const savedFormsForHR = JSON.parse(localStorage.getItem("sentToEmployeesFormsForHR")) || [];
-        const updatedFormsForHR = savedFormsForHR.filter((form) => form.id !== formId);
-        setSentToEmployeesForms(updatedFormsForHR);
-        localStorage.setItem("sentToEmployeesFormsForHR", JSON.stringify(updatedFormsForHR));
-        console.log(`Form with ID ${formId} has been deleted for HR only.`);
+    useEffect(() => {
+        fetchApprovedForms(); // ✅ โหลดฟอร์มที่ HR อนุมัติแล้ว
+    }, []);
+
+
+    const setdetailFromView = async (from) => {
+        console.log(from)
+
+        setSelectedFormForDetails({
+            ...from,
+            roleid: from.rolesid,
+            leavedType: from.leavedType,
+            leaveTypeId: from.leaveTypeId
+        })
+        await fetchHistory(from.documentId)
+        // roleid: roles,
+    }
+    const fetchHistory = async (documentid) => {
+        try {
+            const res = await axios.get(`https://localhost:7039/api/Document/GetDocumentWithHistory/${documentid}`);
+            console.log("fetchHistory", res.data.historyleave)
+
+            const historyRes = res.data.historyleave;
+
+            sethistoryState(historyRes)
+        } catch (e) {
+            console.log(e)
+        }
+    }
+    const fetchHRForms = async () => {
+        try {
+            const response = await fetch("https://localhost:7039/api/Document/GetPendingFormsForHR");
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log("📌 ฟอร์มที่โหลดมา:", data);
+                setHrForms(data); // ✅ โหลดข้อมูลใหม่
+            } else {
+                console.warn("❌ ไม่พบฟอร์มที่ต้องอนุมัติ");
+                setHrForms([]);
+            }
+        } catch (error) {
+            console.error("❌ Error fetching HR pending forms:", error);
+        }
+    };
+    const fetchApprovedForms = async () => {
+        try {
+            const response = await fetch("https://localhost:7039/api/Document/GetApprovedFormsForHR");
+
+            if (response.ok) {
+                const data = await response.json();
+                setHrApprovedForms(data); // ✅ โหลดข้อมูลฟอร์มที่ HR อนุมัติแล้วจากฐานข้อมูล
+            } else {
+                setHrApprovedForms([]); // ตั้งค่าเป็นอาร์เรย์ว่าง
+            }
+        } catch (error) {
+            console.error("❌ Error fetching approved HR forms:", error);
+        }
     };
 
-    const sendDocumentToEmployee2 = (form) => {
-        const userIdFromForm = form.userId; // เก็บ userId จากฟอร์ม
-        const savedDocumentsForEmployee = JSON.parse(localStorage.getItem("sentToEmployeesFormsForEmployee")) || [];
+    const handleEditHRSignature = async () => {
+        if (!selectedFormForEdit || !selectedFormForEdit.documentId) {
+            alert("ไม่พบฟอร์มที่ต้องการแก้ไข");
+            return;
+        }
 
-        // เพิ่มเอกสารใหม่พร้อมสถานะ "อัปโหลดอัตโนมัติ"
-        const updatedEmployeeDocs = [
-            ...savedDocumentsForEmployee,
-            { ...form, userId: userIdFromForm, uploadedAutomatically: true } // เพิ่ม flag
-        ];
+        if (!selectedFormForEdit.hrSignature) {
+            alert("กรุณากรอกชื่อ HR");
+            return;
+        }
 
-        // อัปเดตใน LocalStorage
-        localStorage.setItem("sentToEmployeesFormsForEmployee", JSON.stringify(updatedEmployeeDocs));
+        const updateData = {
+            DocumentID: selectedFormForEdit.documentId,
+            HRSignature: selectedFormForEdit.hrSignature,
+        };
 
-        console.log(`Document automatically uploaded for employee ID: ${userIdFromForm}`);
+        try {
+            const response = await fetch("https://localhost:7039/api/Document/EditHRSignature", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updateData),
+            });
 
+            if (response.ok) {
 
+                // ✅ โหลดข้อมูลฟอร์มที่ HR อนุมัติแล้วอีกครั้ง
+                await fetchApprovedForms();
 
+                setSelectedFormForEdit(null);
+            } else {
+                const errorText = await response.text();
+                console.error("❌ Server error:", errorText);
+                alert("❌ เกิดข้อผิดพลาด: " + errorText);
+            }
+        } catch (error) {
+            console.error("❌ Error:", error);
+            alert("❌ เกิดข้อผิดพลาดในการอัปเดตชื่อ HR");
+        }
+    };
 
-        const formData = new FormData();
-        formData.append('File', newDocument.file);
-        formData.append('Category', newDocument.category);
-        formData.append('Description', newDocument.description);
-        formData.append('UserID', userID);
+    // ฟังก์ชันแปลงวันที่เป็นรูปแบบ "DD/MM/YYYY"
+    const formatDate = (dateStr) => {
+        if (!dateStr) return "-";
+        const date = new Date(dateStr);
+        return date.toLocaleDateString("th-TH", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+    };
+    const handleSendToEmployee = async (form) => {
+        try {
+            const response = await fetch("https://localhost:7039/api/Document/SendDocumentToEmployee", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: form.userId || 0,
+                    fullname: form.fullname || "ไม่ระบุชื่อ",
+                    documentId: form.documentId || "",
+                    leaveTypeId: form.leaveTypeId || ""
+                }),
+            });
 
+            if (response.ok) {
+                setModalMessage("✅ ส่งเอกสารให้พนักงานสำเร็จ!");
 
-
-
+                // ✅ ลบฟอร์มที่ถูกส่งออกจากรายการที่อนุมัติแล้ว
+                setHrApprovedForms(prevForms => prevForms.filter(f => f.documentId !== form.documentId));
+            } else {
+                setModalMessage("❌ ไม่สามารถส่งเอกสารให้พนักงานได้");
+            }
+        } catch (error) {
+            console.error("❌ Error:", error);
+            setModalMessage("❌ เกิดข้อผิดพลาดในการส่งเอกสารให้พนักงาน");
+        } finally {
+            setIsModalOpen(true); // เปิด Modal แจ้งเตือน
+        }
     };
 
 
-    // ฟังก์ชันแปลงฟอร์มเป็น PDF และดาวน์โหลด
-    const downloadPDF = (form) => {
-        const content = `ฟอร์มพนักงาน\n\nชื่อพนักงาน: ${form.department}\nตำแหน่ง: ${form.position}\nวันที่ลา: ${form.fromDate} ถึง ${form.toDate}\nความคิดเห็นหัวหน้า: ${form.managerComment}\nความคิดเห็น HR: ${form.hrComment || ""}`;
-        const blob = new Blob([content], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `form_${form.id}.pdf`;
-        link.click();
-        URL.revokeObjectURL(url);
-    };
-
-    // ฟังก์ชันปิด Modal ดูรายละเอียดฟอร์ม
-    const closeHRFormModal = () => {
-        setSelectedHRForm(null);
-    };
-
-
-    // ฟังก์ชันลบฟอร์ม
-    const deleteForm = (id) => {
-        const updatedForms = hrApprovedForms.filter((form) => form.id !== id);
-        setHrApprovedForms(updatedForms);
-        localStorage.setItem("hrApprovedForms", JSON.stringify(updatedForms));
-    };
-
-    // ฟังก์ชันปิด Modal ลบฟอร์ม
-    const closeDeleteModal = () => {
-        setSelectedFormToDelete(null);
-    };
 
     return (
         <div className="p-6">
@@ -157,14 +249,14 @@ const HRView = () => {
                             {hrForms.map((form, index) => (
                                 <tr key={form.id || index}>
                                     <td className="font-FontNoto">{index + 1}</td>
-                                    <td className="font-FontNoto">{form.department}</td>
-                                    <td className="font-FontNoto">{form.approvedDate}</td>
+                                    <td className="font-FontNoto">{form.fullname}</td>
+                                    <td className="font-FontNoto">{formatDate(form.approvedDate)}</td>
                                     <td className="font-FontNoto">{form.managerName}</td>
                                     <td className="font-FontNoto">{form.managerComment}</td>
                                     <td className="text-center">
                                         <button
                                             className="btn btn-sm btn-outline btn-info ml-2 font-FontNoto"
-                                            onClick={() => setSelectedFormForDetails(form)} // เปิด Modal ดูรายละเอียด
+                                            onClick={() => setdetailFromView(form)} // เปิด Modal ดูรายละเอียด
                                         >
                                             ดูรายละเอียด
                                         </button>
@@ -193,7 +285,7 @@ const HRView = () => {
                     <dialog open className="modal modal-open">
                         <div className="modal-box">
                             <h3 className="font-bold text-lg font-FontNoto">เซ็นชื่ออนุมัติ</h3>
-                            <p className="font-FontNoto">คุณกำลัง อนุมัติฟอร์มของ : {formToApprove.department}</p>
+                            <p className="font-FontNoto">คุณกำลัง อนุมัติฟอร์มของ : {formToApprove.fullname}</p>
                             <div className="mt-4">
                                 <label className="label">
                                     <span className="label-text font-FontNoto">ชื่อ ทรัพยากรบุคคล :</span>
@@ -202,14 +294,9 @@ const HRView = () => {
                                     type="text"
                                     className="input input-bordered w-full font-FontNoto"
                                     value={hrName}
-                                    onChange={(e) => setHrName(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        const key = e.key;
-                                        // ตรวจสอบเฉพาะตัวอักษรภาษาไทยและปุ่ม Backspace/Delete
-                                        const thaiRegex = /^[ก-๙\s]+$/;
-                                        if (!thaiRegex.test(key) && key !== "Backspace" && key !== "Delete") {
-                                            e.preventDefault();
-                                        }
+                                    onChange={(e) => {
+                                        const onlyText = e.target.value.replace(/[0-9]/g, ""); // ✅ ลบเฉพาะตัวเลขออก
+                                        setHrName(onlyText);
                                     }}
                                 />
                             </div>
@@ -242,35 +329,37 @@ const HRView = () => {
                             <tr className="text-black bg-blue-100">
                                 <th>#</th>
                                 <th className="font-FontNoto text-center">ชื่อพนักงาน</th>
-                                <th className="font-FontNoto text-center">วันที่ HR อนุมัติ</th>
+                                {/* <th className="font-FontNoto text-center">วันที่อนุมัติ</th> */}
+                                <th className="font-FontNoto text-center">ลายเซ็นการอนุมัติ</th>
+                                <th className="font-FontNoto text-center">ความคิดเห็น</th>
+                                <th className="font-FontNoto text-center">วันที่อนุมัติ</th>
+                                <th className="font-FontNoto text-center">ลายเซ็น HR</th>
                                 <th className="font-FontNoto text-center">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
                             {hrApprovedForms.map((form, index) => (
                                 <tr key={`${form.id}-${index}`}>  {/* ใช้ combination ของ `form.id` และ `index` เพื่อให้ key เป็นเอกลักษณ์ */}
-                                    <td className="font-FontNoto">{index + 1}</td>
-                                    <td className="font-FontNoto text-center">{form.department}</td>
-                                    <td className="font-FontNoto text-center">{form.hrApprovedDate}</td>
+                                    <td className="font-FontNoto text-center">{index + 1}</td>
+                                    <td className="font-FontNoto text-center">{form.fullname}</td>
+                                    {/* <td className="font-FontNoto text-center">{formatDate(form.approvedDate)}</td> */}
+                                    <td className="font-FontNoto text-center">{form.managerName}</td>
+                                    <td className="font-FontNoto text-center">{form.managerComment}</td>
+                                    <td className="font-FontNoto text-center">{formatDate(form?.hrApprovedDate)}</td>
+                                    <td className="font-FontNoto text-center">{form.hrSignature}</td>
+
                                     <td className="font-FontNoto text-center">
                                         <button
                                             className="btn btn-sm btn-outline btn-primary"
-                                            onClick={() => sendDocumentToEmployee2(form)} // เรียกใช้ฟังก์ชันเมื่อกดปุ่ม
+                                            onClick={() => handleSendToEmployee(form)} // ✅ กดแล้วเอกสารจะถูกบันทึกลงฐานข้อมูล
                                         >
                                             ส่งให้พนักงาน
                                         </button>
-
                                         <button
                                             className="btn btn-sm btn-outline btn-warning ml-2"
                                             onClick={() => setSelectedFormForEdit(form)} // เปิด Modal แก้ไข
                                         >
                                             แก้ไข
-                                        </button>
-                                        <button
-                                            className="btn btn-sm btn-outline btn-error ml-2"
-                                            onClick={() => setSelectedFormForDelete(form)} // เปิด Modal ยืนยันการลบ
-                                        >
-                                            ลบ
                                         </button>
                                     </td>
                                 </tr>
@@ -293,28 +382,19 @@ const HRView = () => {
                                     type="text"
                                     className="input input-bordered w-full font-FontNoto"
                                     value={selectedFormForEdit.hrSignature}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
+                                        const onlyText = e.target.value.replace(/[0-9]/g, ""); // ✅ ลบเฉพาะตัวเลขออก
                                         setSelectedFormForEdit({
                                             ...selectedFormForEdit,
-                                            hrSignature: e.target.value, // อัปเดตชื่อ HR
-                                        })
-                                    }
+                                            hrSignature: onlyText,
+                                        });
+                                    }}
                                 />
                             </div>
                             <div className="modal-action">
                                 <button
                                     className="btn btn-outline btn-success font-FontNoto"
-                                    onClick={() => {
-                                        const updatedForms = hrApprovedForms.map((f) =>
-                                            f.id === selectedFormForEdit.id ? selectedFormForEdit : f
-                                        );
-                                        setHrApprovedForms(updatedForms);
-                                        localStorage.setItem(
-                                            "hrApprovedForms",
-                                            JSON.stringify(updatedForms)
-                                        );
-                                        setSelectedFormForEdit(null); // ปิด Modal
-                                    }}
+                                    onClick={handleEditHRSignature} // ✅ เรียกใช้ฟังก์ชันอัปเดตชื่อ HR
                                 >
                                     บันทึก
                                 </button>
@@ -328,38 +408,20 @@ const HRView = () => {
                         </div>
                     </dialog>
                 )}
-                {selectedFormForDelete && (
+                {isModalOpen && (
                     <dialog open className="modal modal-open">
                         <div className="modal-box">
-                            <h3 className="font-bold text-lg font-FontNoto">ยืนยันการลบ</h3>
-                            <p className="font-FontNoto">คุณแน่ใจหรือไม่ว่าจะลบฟอร์มนี้ ?</p>
-                            <div className="modal-action font-FontNoto">
-                                <button
-                                    className="btn btn-outline btn-error"
-                                    onClick={() => {
-                                        const updatedForms = hrApprovedForms.filter(
-                                            (f) => f.id !== selectedFormForDelete.id
-                                        );
-                                        setHrApprovedForms(updatedForms);
-                                        localStorage.setItem(
-                                            "hrApprovedForms",
-                                            JSON.stringify(updatedForms)
-                                        );
-                                        setSelectedFormForDelete(null); // ปิด Modal
-                                    }}
-                                >
-                                    ลบ
-                                </button>
-                                <button
-                                    className="btn btn-outline btn-warning"
-                                    onClick={() => setSelectedFormForDelete(null)} // ปิด Modal
-                                >
-                                    ยกเลิก
+                            <h3 className="font-bold text-lg font-FontNoto">แจ้งเตือน</h3>
+                            <p className="font-FontNoto">{modalMessage}</p>
+                            <div className="modal-action">
+                                <button className="btn btn-outline btn-success font-FontNoto" onClick={() => setIsModalOpen(false)}>
+                                    ตกลง
                                 </button>
                             </div>
                         </div>
                     </dialog>
                 )}
+
                 {selectedFormForDetails && (
                     <dialog open className="modal modal-open">
                         <div className="modal-box">
@@ -368,45 +430,53 @@ const HRView = () => {
                                 <tbody>
                                     <tr>
                                         <td colSpan="2" style={{ display: 'flex' }}>
-                                            <div className="font-FontNoto" style={{ marginRight: '40px' }}><strong className="font-FontNoto">ชื่อ :</strong> {selectedFormForDetails.department}</div>
-                                            <div className="font-FontNoto"><strong className="font-FontNoto">ตำแหน่ง :</strong> {selectedFormForDetails.position}</div>
+                                            <div className="font-FontNoto" style={{ marginRight: '40px' }}><strong className="font-FontNoto">ชื่อ :</strong> {selectedFormForDetails.fullname}</div>
+                                            <div className="font-FontNoto"><strong className="font-FontNoto">ตำแหน่ง :</strong> {
+                                                roleState.find(x => x.rolesid == selectedFormForDetails.roleid)?.rolesname
+
+                                            }</div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colSpan="2" style={{ display: 'flex' }}>
-                                            <div className="font-FontNoto" style={{ marginRight: '100px' }}><strong className="font-FontNoto">ขอลา :</strong> {selectedFormForDetails.leaveType}</div>
+                                            <div className="font-FontNoto" style={{ marginRight: '100px' }}><strong className="font-FontNoto">ขอลา :</strong> {
+                                                leaveTypesState.find(x => x.leaveTypeid == selectedFormForDetails.leaveTypeId)?.leaveTypeTh
+                                            }
+                                            </div>
                                             <div className="font-FontNoto"><strong className="font-FontNoto">เนื่องจาก :</strong> {selectedFormForDetails.reason}</div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colSpan="2" style={{ display: 'flex' }}>
-                                            <div className="font-FontNoto" style={{ marginRight: '25px' }}><strong className="font-FontNoto">ตั้งแต่วันที่ :</strong> {selectedFormForDetails.fromDate}</div>
-                                            <div className="font-FontNoto" style={{ marginRight: '20px' }}><strong className="font-FontNoto">ถึงวันที่ :</strong> {selectedFormForDetails.toDate}</div>
-                                            <div className="font-FontNoto"><strong className="font-FontNoto">กำหนด :</strong> {selectedFormForDetails.totalDays} วัน </div>
+                                            <div className="font-FontNoto" style={{ marginRight: '25px' }}><strong className="font-FontNoto">ตั้งแต่วันที่ :</strong> {formatDate(selectedFormForDetails?.startdate)}</div>
+                                            <div className="font-FontNoto" style={{ marginRight: '20px' }}><strong className="font-FontNoto">ถึงวันที่ :</strong> {formatDate(selectedFormForDetails?.enddate)}</div>
+                                            <div className="font-FontNoto"><strong className="font-FontNoto">กำหนด :</strong> {selectedFormForDetails.totalleave} วัน </div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colSpan="2" style={{ display: 'flex' }}>
-                                            <div className="font-FontNoto"><strong className="font-FontNoto">ข้าพเจ้าได้ลา :</strong> {selectedFormForDetails.leT}</div>
+                                            <div className="font-FontNoto"><strong className="font-FontNoto">ข้าพเจ้าได้ลา :</strong>
+                                                {leaveTypesState.find(x => x.leaveTypeid == selectedFormForDetails.leavedType)?.leaveTypeTh}
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colSpan="2" style={{ display: 'flex' }}>
-                                            <div className="font-FontNoto" style={{ marginRight: '25px' }}><strong className="font-FontNoto">ครั้งสุดท้าย:</strong> {selectedFormForDetails.fromd}</div>
-                                            <div className="font-FontNoto" style={{ marginRight: '20px' }}><strong className="font-FontNoto">ถึงวันที่ :</strong> {selectedFormForDetails.tod}</div>
-                                            <div className="font-FontNoto"><strong className="font-FontNoto">กำหนด :</strong> {selectedFormForDetails.totald} วัน </div>
+                                            <div className="font-FontNoto" style={{ marginRight: '25px' }}><strong className="font-FontNoto">ครั้งสุดท้าย:</strong> {formatDate(selectedFormForDetails?.leavedStartdate)}</div>
+                                            <div className="font-FontNoto" style={{ marginRight: '20px' }}><strong className="font-FontNoto">ถึงวันที่ :</strong> {formatDate(selectedFormForDetails?.leavedEnddate)}</div>
+                                            <div className="font-FontNoto"><strong className="font-FontNoto">กำหนด :</strong> {selectedFormForDetails.totalleaved} วัน </div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colSpan="2" style={{ display: 'flex' }}>
-                                            <div className="font-FontNoto" style={{ marginRight: '50px' }}><strong className="font-FontNoto">ระหว่างลา ติดต่อได้ที่:</strong> {selectedFormForDetails.contact}</div>
-                                            <div><strong className="font-FontNoto">เบอร์ติดต่อ :</strong> {selectedFormForDetails.phone}</div>
+                                            <div className="font-FontNoto" style={{ marginRight: '50px' }}><strong className="font-FontNoto">ระหว่างลา ติดต่อได้ที่:</strong> {selectedFormForDetails?.friendeContact}</div>
+                                            <div><strong className="font-FontNoto">เบอร์ติดต่อ :</strong> {selectedFormForDetails?.contact}</div>
                                         </td>
                                     </tr>
                                     <tr className="font-FontNoto text-center">
                                         <td style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                             <div className="font-FontNoto text-center">
-                                                <strong className="font-FontNoto text-center">สถิติการลาในปีนี้ วันเริ่มงาน:</strong> {selectedFormForDetails.tt}
+                                                <strong className="font-FontNoto text-center">สถิติการลาในปีนี้ วันเริ่มงาน:</strong> {formatDate(selectedFormForDetails?.workingstart)}
                                             </div>
                                         </td>
                                     </tr>
@@ -420,33 +490,33 @@ const HRView = () => {
                                             </tr>
                                             <tr>
                                                 <th className="font-FontNoto">ป่วย</th>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.sickDaysUsed}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.sickDaysCurrent}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.sickDaysTotal}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.lastTotalStickDay}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.totalStickDay}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.sumStickDay}</td>
                                             </tr>
                                             <tr>
                                                 <th className="font-FontNoto">กิจส่วนตัว</th>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.personalDaysUsed}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.personalDaysCurrent}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.personalDaysTotal}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.lastTotalPersonDay}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.totalPersonDay}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.sumPersonDay}</td>
                                             </tr>
                                             <tr>
                                                 <th className="font-FontNoto">พักร้อน</th>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.vacationDaysUsed}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.vacationDaysCurrent}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.vacationDaysTotal}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.lastTotalVacationDays}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.totalVacationDays}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.sumVacationDays}</td>
                                             </tr>
                                             <tr>
                                                 <th className="font-FontNoto">คลอดบุตร</th>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.maternityDaysUsed}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.maternityDaysCurrent}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.maternityDaysTotal}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.lastTotalMaternityDaystotal}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.totalMaternityDaystotal}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.sumMaternityDaystotal}</td>
                                             </tr>
                                             <tr>
                                                 <th className="font-FontNoto">บวช</th>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.ordinationDaysUsed}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.ordinationDaysCurrent}</td>
-                                                <td className="font-FontNoto text-center">{selectedFormForDetails.ordinationDaysTotal}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.lastTotalOrdinationDays}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.totalOrdinationDays}</td>
+                                                <td className="font-FontNoto text-center">{historyState?.sumOrdinationDays}</td>
                                             </tr>
                                         </thead>
                                     </tr>
@@ -455,7 +525,7 @@ const HRView = () => {
                             {/* เพิ่มข้อมูลเพิ่มเติมตามที่คุณต้องการ */}
                             <div className="modal-action">
                                 <button
-                                    className="btn btn-outline btn-error"
+                                    className="btn btn-outline btn-error font-FontNoto"
                                     onClick={() => setSelectedFormForDetails(null)} // ปิด Modal
                                 >
                                     ปิด
@@ -467,104 +537,6 @@ const HRView = () => {
 
             </section>
 
-            {/* ฟอร์มที่ส่งให้พนักงาน */}
-            <section className="mt-8">
-                <h2 className="text-lg font-bold mb-2 font-FontNoto">ฟอร์มที่ส่งให้พนักงานแล้ว</h2>
-                {sentToEmployeesForms.length > 0 ? (
-                    <table className="table table-zebra w-full">
-                        <thead>
-                            <tr className="text-black bg-blue-100">
-                                <th>#</th>
-                                <th className="font-FontNoto">ชื่อพนักงาน</th>
-                                <th className="font-FontNoto">ลายเซ็นผู้จัดการทั่วไป</th>
-                                <th className="font-FontNoto">ความคิดเห็น</th>
-                                <th className="font-FontNoto">ชื่อฝ่ายบุคคล</th>
-                                <th className="font-FontNoto">วันที่ HR อนุมัติ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sentToEmployeesForms.map((form, index) => (
-                                <tr key={form.id}>
-                                    <td className="font-FontNoto">{index + 1}</td>
-                                    <td className="font-FontNoto">{form.department}</td>
-                                    <td className="font-FontNoto">{form.managerName}</td>
-                                    <td className="font-FontNoto">{form.managerComment}</td>
-                                    <td className="font-FontNoto">{form.hrSignature}</td>
-                                    <td className="font-FontNoto">{form.hrApprovedDate}</td>
-                                    {/* <td className="font-FontNoto">
-                                        <button
-                                            className="btn btn-sm btn-outline btn-secondary"
-                                            onClick={() => downloadPDF(form)}
-                                        >
-                                            ดาวน์โหลด PDF
-                                        </button>
-                                        <button
-                                            className="btn btn-sm btn-outline btn-error ml-2"
-                                            onClick={() => deleteFormForHR(form.id)}
-                                        >
-                                            ลบ
-                                        </button>
-                                    </td> */}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                ) : (
-                    <p className="font-FontNoto text-center">ยังไม่มีฟอร์มที่ส่งให้พนักงาน</p>
-                )}
-            </section>
-
-            {/* Modal ยืนยันการลบฟอร์ม */}
-            {selectedFormToDelete && (
-                <dialog open className="modal modal-open">
-                    <div className="modal-box">
-                        <h3 className="font-bold text-lg">ยืนยันการลบ</h3>
-                        <p>คุณแน่ใจหรือไม่ว่าจะลบฟอร์มนี้?</p>
-                        <div className="modal-action">
-                            <button
-                                className="btn btn-outline btn-error"
-                                onClick={() => {
-                                    deleteForm(selectedFormToDelete.id);
-                                    closeDeleteModal();
-                                }}
-                            >
-                                ยืนยัน
-                            </button>
-                            <button
-                                className="btn btn-outline btn-warning"
-                                onClick={closeDeleteModal}
-                            >
-                                ยกเลิก
-                            </button>
-                        </div>
-                    </div>
-                </dialog>
-            )}
-
-            {/* Modal ดูรายละเอียดฟอร์มที่ส่งให้ HR */}
-            {selectedHRForm && (
-                <dialog open className="modal modal-open">
-                    <div className="modal-box">
-                        <h3 className="font-bold text-lg">รายละเอียดฟอร์ม</h3>
-                        <p><strong>ชื่อพนักงาน:</strong> {selectedHRForm.department}</p>
-                        <p><strong>ตำแหน่ง:</strong> {selectedHRForm.position}</p>
-                        <p><strong>ประเภทการลา:</strong> {selectedHRForm.leaveType}</p>
-                        <p><strong>เหตุผล:</strong> {selectedHRForm.reason}</p>
-                        <p><strong>วันที่ลา:</strong> {selectedHRForm.fromDate} ถึง {selectedHRForm.toDate}</p>
-                        <p><strong>จำนวนวันลา:</strong> {selectedHRForm.totalDays} วัน</p>
-                        <p><strong>ติดต่อ:</strong> {selectedHRForm.contact} ({selectedHRForm.phone})</p>
-
-                        <div className="modal-action">
-                            <button
-                                className="btn btn-outline btn-error"
-                                onClick={closeHRFormModal}
-                            >
-                                ปิด
-                            </button>
-                        </div>
-                    </div>
-                </dialog>
-            )}
         </div>
     );
 };

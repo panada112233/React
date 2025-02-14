@@ -37,6 +37,14 @@ const LeaveGraph = () => {
     Maternity: 'ลาคลอด',
     Ordination: 'ลาบวช',
   };
+  const categoryMappingg = {
+    "A461E72F-B9A3-4F9D-BF69-1BBE6EA514EC": "ลาป่วย",
+    "6CF7C54A-F9BA-4151-A554-6487FDD7ED8D": "ลาพักร้อน",
+    "1799ABEB-158C-479E-A9DC-7D45E224E8ED": "ลากิจ",
+    "DAA14555-28E7-497E-B1D8-E0DA1F1BE283": "ลาคลอด",
+    "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "ลาบวช",
+};
+
 
   useEffect(() => {
     const fetchFileData = async () => {

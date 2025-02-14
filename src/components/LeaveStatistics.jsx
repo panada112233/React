@@ -30,13 +30,22 @@ const LeaveStatistics = () => {
     Maternity: 'ลาคลอด',
     Ordination: 'ลาบวช',
   };
+  const categoryMappingg = {
+    "A461E72F-B9A3-4F9D-BF69-1BBE6EA514EC": "ลาป่วย",
+    "6CF7C54A-F9BA-4151-A554-6487FDD7ED8D": "ลาพักร้อน",
+    "1799ABEB-158C-479E-A9DC-7D45E224E8ED": "ลากิจ",
+    "DAA14555-28E7-497E-B1D8-E0DA1F1BE283": "ลาคลอด",
+    "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "ลาบวช",
+  };
 
   useEffect(() => {
     const fetchFileData = async () => {
       try {
         const filesResponse = await axios.get("https://localhost:7039/api/Files");
         const usersResponse = await axios.get("https://localhost:7039/api/Users");
-
+        const leaveResponse = await axios.get("https://localhost:7039/api/Document/GetAllCommitedDocuments");
+      
+       
         const userMapping = usersResponse.data.reduce((acc, user) => {
           acc[user.userID] = `${user.firstName} ${user.lastName}`;
           return acc;
@@ -56,6 +65,25 @@ const LeaveStatistics = () => {
           }, {});
         });
 
+        leaveResponse.data.forEach((doc) => {
+          console.log(doc)
+          const docDate = new Date(doc.sentToHrdate)
+          
+          if (docDate.getMonth() === selectedMonth &&
+            docDate.getFullYear() === selectedYear) {
+              console.log("data in date ",doc)
+
+
+            const leaveName =   categoryMappingg[doc.leaveTypeId.toLocaleUpperCase()]
+            
+            const userName = userMapping[doc.userId] || "Unknown";
+            if (leaveName) {
+              groupedData[userName][leaveName] = (groupedData[userName][leaveName] || 0) + 1;
+              categoryCountData[leaveName] = (categoryCountData[leaveName] || 0) + 1;
+            }
+          }
+        })
+
         filesResponse.data
           .filter((file) => file.category !== "Others" && file.category !== "Doc") // กรอง Others และ Doc
           .forEach((file) => {
@@ -66,12 +94,14 @@ const LeaveStatistics = () => {
             ) {
               const userName = userMapping[file.userID] || "Unknown";
               const thaiCategory = categoryMapping[file.category];
+              console.log(file.category)
+
               if (thaiCategory) {
-                groupedData[userName][thaiCategory] =
-                  (groupedData[userName][thaiCategory] || 0) + 1;
-                categoryCountData[thaiCategory] =
-                  (categoryCountData[thaiCategory] || 0) + 1;
+                groupedData[userName][thaiCategory] = (groupedData[userName][thaiCategory] || 0) + 1;
+                categoryCountData[thaiCategory] = (categoryCountData[thaiCategory] || 0) + 1;
               }
+
+
             }
           });
 
@@ -195,7 +225,7 @@ const LeaveStatistics = () => {
               className="select select-bordered w-40 text-black font-FontNoto"
             >
               {months.map((month, index) => (
-                <option key={index} value={index}>{month}</option>
+                <option className="font-FontNoto" key={index} value={index}>{month}</option>
               ))}
             </select>
 
@@ -207,7 +237,7 @@ const LeaveStatistics = () => {
               className="select select-bordered w-40 text-black font-FontNoto"
             >
               {years.map((year) => (
-                <option key={year} value={year}>{year}</option>
+                <option className="font-FontNoto" key={year} value={year}>{year}</option>
               ))}
             </select>
           </div>
