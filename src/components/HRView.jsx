@@ -4,11 +4,15 @@ import React, { useState, useEffect } from "react";
 const HRView = () => {
     const [hrApprovedForms, setHrApprovedForms] = useState([]); // ฟอร์มที่ HR เซ็นชื่ออนุมัติ
     const [hrForms, setHrForms] = useState([]);
+    const [selectedDocument, setSelectedDocument] = useState(null);
+    const [selectedFilePath, setSelectedFilePath] = useState('');
+    const [savedDocuments, setSavedDocuments] = useState([]); // เอกสารที่บันทึกไว้ดูส่วนตัว
     const [formToApprove, setFormToApprove] = useState(null);
     const [hrName, setHrName] = useState(""); // เพิ่ม state สำหรับชื่อ HR
     const [selectedFormForEdit, setSelectedFormForEdit] = useState(null); // ฟอร์มที่เลือกแก้ไข
     const [selectedFormForDetails, setSelectedFormForDetails] = useState(null); // ฟอร์มที่เลือกดูรายละเอียด
     const currentUserRole = sessionStorage.getItem("role");
+    const [sentForms, setSentForms] = useState({});
     const [roleState, setRolesState] = useState(null)
     const [historyState, sethistoryState] = useState(null)
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +23,21 @@ const HRView = () => {
         file: null,
         description: '',
     });
+
+    const leavedTypeMapping = {
+        "A461E72F-B9A3-4F9D-BF69-1BBE6EA514EC": "ป่วย",
+        "6CF7C54A-F9BA-4151-A554-6487FDD7ED8D": "พักร้อน",
+        "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "บวช",
+        "1799ABEB-158C-479E-A9DC-7D45E224E8ED": "กิจส่วนตัว",
+        "DAA14555-28E7-497E-B1D8-E0DA1F1BE283": "ลาคลอด",
+    }
+    const rolesMapping = {
+        "17E87D2B-94C5-44A3-AD5C-1A6669FE46AF": "พนักงาน",
+        "54DFE7BA-8EEC-40AD-9CDE-37A78E9CB045": "ผู้จัดการทั่วไป",
+        "9D97FB2C-4356-417E-84BC-44A76EF7E301": "นักวิเคราะห์ธุรกิจ",
+        "34801390-360B-450E-92B4-6493E1CFC146": "ทรัพยากรบุคคล",
+        "26090F1D-A579-4242-969D-F16DD921EB05": "นักพัฒนาระบบ",
+    }
 
     useEffect(() => {
         //  loadLocalStorageData();
@@ -52,8 +71,6 @@ const HRView = () => {
             HRSignature: hrName,
         };
 
-        console.log("✅ Data ที่ส่งไป API:", approvalData);
-
         try {
             const response = await fetch("https://localhost:7039/api/Document/ApproveByHR", {
                 method: "POST",
@@ -62,21 +79,23 @@ const HRView = () => {
             });
 
             if (response.ok) {
-                // 1️⃣ ลบฟอร์มที่อนุมัติแล้วออกจาก `hrForms`
                 setHrForms(prevForms => prevForms.filter(form => form.documentId !== formToApprove.documentId));
 
-                // 2️⃣ เพิ่มฟอร์มที่อนุมัติแล้วลงใน `hrApprovedForms`
-                setHrApprovedForms(prevApprovedForms => [...prevApprovedForms, {
+                // ✅ อัปเดตค่าฟอร์มที่อนุมัติแล้ว
+                const updatedHrApprovedForms = [...hrApprovedForms, {
                     ...formToApprove,
                     hrSignature: hrName,
-                    hrApprovedDate: new Date().toISOString() // ✅ อัปเดตวันที่อนุมัติ
-                }]);
+                    hrApprovedDate: new Date().toISOString()
+                }];
+                setHrApprovedForms(updatedHrApprovedForms);
 
-                // 3️⃣ เคลียร์ค่าฟอร์มที่กำลังอนุมัติและชื่อ HR
+                // ✅ บันทึกลง Local Storage
+                localStorage.setItem("hrApprovedForms", JSON.stringify(updatedHrApprovedForms));
+
                 setFormToApprove(null);
                 setHrName("");
 
-                console.log("✅ ฟอร์มถูกอนุมัติและย้ายไปแสดงข้างล่างแล้ว!");
+                console.log("✅ ฟอร์มถูกอนุมัติและบันทึกไว้เรียบร้อย!");
             } else {
                 const errorText = await response.text();
                 console.error("❌ Server error:", errorText);
@@ -88,9 +107,284 @@ const HRView = () => {
     };
 
     useEffect(() => {
-        fetchApprovedForms(); // ✅ โหลดฟอร์มที่ HR อนุมัติแล้ว
+        fetchApprovedForms(); // โหลดฟอร์มที่ HR อนุมัติแล้ว
+        loadSavedDocuments(); // โหลดเอกสารที่บันทึกไว้
     }, []);
 
+    const loadSavedDocuments = () => {
+        const saved = JSON.parse(localStorage.getItem("savedHRDocuments")) || [];
+        setSavedDocuments(saved);
+    };
+    const handleSavePersonalDocument = (doc) => {
+        const updatedDocs = [...savedDocuments, doc];
+        localStorage.setItem("savedHRDocuments", JSON.stringify(updatedDocs));
+        setSavedDocuments(updatedDocs);
+    };
+
+    const handleOpenModal = async (filePathOrDoc) => {
+        if (!filePathOrDoc) {
+            alert("❌ ไม่พบข้อมูลเอกสาร");
+            return;
+        }
+
+        if (typeof filePathOrDoc === 'string') {
+            // ✅ เปิดไฟล์ PDF โดยตรง
+            window.open(`https://localhost:7039${filePathOrDoc}`, '_blank');
+            return;
+        }
+
+        if (filePathOrDoc?.filePath) {
+            // ✅ เปิดไฟล์ที่ถูกอัปโหลด
+            window.open(`https://localhost:7039${filePathOrDoc.filePath}`, '_blank');
+            return;
+        }
+
+        if (filePathOrDoc?.documentId) {
+            // ✅ โหลดข้อมูล historyState ก่อน
+            const historyData = await fetchHistory(filePathOrDoc.documentId);
+
+            if (!historyData) {
+                alert("❌ ไม่พบข้อมูลสถิติการลา");
+                return;
+            }
+
+            console.log("✅ ข้อมูล historyState ที่ใช้สร้าง PDF:", historyData);
+
+            // ✅ สร้าง PDF พร้อมข้อมูลที่ถูกต้อง
+            createPDF({ ...filePathOrDoc, history: historyData });
+            return;
+        }
+
+        alert("❌ ไม่สามารถเปิดเอกสารได้");
+    };
+
+
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedDocument(null);
+        setSelectedFilePath('');
+    };
+
+    const createPDF = (doc) => {
+        if (!doc) {
+            alert("ไม่พบข้อมูลเอกสาร");
+            return;
+        }
+        const history = doc.history; // ✅ ใช้ข้อมูลที่โหลดมาใหม่แทน `historyState`
+        // Helper function แปลงวันที่defaultStyle
+        const formatDate = (date) => {
+            if (!date) return "-";
+            return new Intl.DateTimeFormat("th-TH", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(date));
+        };
+
+        const docDefinition = {
+            content: [
+                { text: "แบบฟอร์มใบลา", style: "header" },
+                {
+                    text: `วันที่ : ${formatDate(doc.createdate)}`,
+                    margin: [0, 10, 0, 10],
+                    alignment: 'right' // ทำให้ข้อความชิดขวา
+                },
+                { text: `เรื่อง : ขออนุญาติลา : ${leavedTypeMapping[doc.leaveTypeId.toUpperCase()] || "-"}`, margin: [0, 10, 0, 10] },
+                { text: `เรียน หัวหน้าแผนก/ฝ่ายบุคคล`, margin: [0, 10, 0, 10] },
+                {
+                    table: {
+                        widths: ["auto", "*"],
+                        body: [
+                            ["ข้าพเจ้า :", `${doc.fullname || "-"} แผนก ${rolesMapping[doc.rolesid.toUpperCase()] || "-"}`],
+                            ["ขอลา :", `${leavedTypeMapping[doc.leaveTypeId.toUpperCase()] || "-"} เนื่องจาก ${doc.reason || "-"}`],
+                            [
+                                "ตั้งแต่วันที่ :",
+                                `${formatDate(doc.startdate)} ถึงวันที่ : ${formatDate(doc.enddate)} รวม : ${doc.totalleave || "0"} วัน`
+                            ],
+                            [
+                                "ข้าพเจ้าได้ลา :",
+                                `${leavedTypeMapping[doc.leavedType.toUpperCase()] || "-"} ครั้งสุดท้าย ตั้งแต่วันที่ : ${formatDate(doc.leavedStartdate)} ถึงวันที่ : ${formatDate(doc.leavedEnddate)} รวม ${doc.totalleaved || "0"} วัน`
+                            ],
+                        ],
+                    },
+                    layout: "noBorders",
+                    margin: [0, 0, 0, 20],
+                },
+                {
+                    table: {
+                        widths: ["auto", "*"],
+                        body: [
+                            [
+                                "ในระหว่างลา ติดต่อข้าพเจ้าได้ที่ :",
+                                `${doc.friendeContact || "-"}, เบอร์ติดต่อ ${doc.contact || "-"}`
+                            ],
+                        ],
+                    },
+                    layout: "noBorders",
+                    margin: [0, 0, 0, 20],
+
+                },
+                {
+                    text: [
+                        { text: "สถิติการลาในปีนี้ (วันเริ่มงาน)", style: "subheader" },
+                        { text: ` วันที่: ${formatDate(doc.workingstart)}`, style: "subheader" }
+                    ]
+                },
+                {
+                    table: {
+                        widths: ["auto", "*", "*", "*"],
+                        body: [
+                            [
+                                { text: "ประเภทลา", alignment: 'center' },
+                                { text: "ลามาแล้ว", alignment: 'center' },
+                                { text: "ลาครั้งนี้", alignment: 'center' },
+                                { text: "รวมเป็น", alignment: 'center' }
+                            ],
+                            [
+                                { text: "ป่วย", alignment: 'center' },
+                                { text: history?.lastTotalStickDay ?? "0", alignment: 'center' },
+                                { text: history?.totalStickDay ?? "0", alignment: 'center' },
+                                { text: history?.sumStickDay ?? "0", alignment: 'center' }
+                            ],
+                            [
+                                { text: "กิจส่วนตัว", alignment: 'center' },
+                                { text: history?.lastTotalPersonDay ?? "0", alignment: 'center' },
+                                { text: history?.totalPersonDay ?? "0", alignment: 'center' },
+                                { text: history?.sumPersonDay ?? "0", alignment: 'center' }
+                            ],
+                            [
+                                { text: "พักร้อน", alignment: 'center' },
+                                { text: history?.lastTotalVacationDays ?? "0", alignment: 'center' },
+                                { text: history?.totalVacationDays ?? "0", alignment: 'center' },
+                                { text: history?.sumVacationDays ?? "0", alignment: 'center' }
+                            ],
+                            [
+                                { text: "คลอดบุตร", alignment: 'center' },
+                                { text: history?.lastTotalMaternityDaystotal ?? "0", alignment: 'center' },
+                                { text: history?.totalMaternityDaystotal ?? "0", alignment: 'center' },
+                                { text: history?.sumMaternityDaystotal ?? "0", alignment: 'center' }
+                            ],
+                            [
+                                { text: "บวช", alignment: 'center' },
+                                { text: history?.lastTotalOrdinationDays ?? "0", alignment: 'center' },
+                                { text: history?.totalOrdinationDays ?? "0", alignment: 'center' },
+                                { text: history?.sumOrdinationDays ?? "0", alignment: 'center' }
+                            ]
+                        ]
+                    },
+                    margin: [0, 0, 0, 20]
+                },
+                {
+                    text: `ขอแสดงความนับถือ          .`,
+                    margin: [0, 10, 0, 0],
+                    alignment: 'right' // ทำให้ข้อความชิดขวา
+                },
+                {
+                    columns: [
+                        {
+                            width: '33%',  // กำหนดความกว้างให้เป็น 1/3 ของพื้นที่
+                            text: `ลงชื่อ: ... ${doc.fullname || "-"} ...`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        },
+                        {
+                            width: '33%',
+                            text: `ลงชื่อ:  ... ${doc.managerName || "-"} ...`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        },
+                        {
+                            width: '33%',
+                            text: `ลงชื่อ:  ... ${doc.hrSignature || "-"} ...`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        }
+                    ]
+                },
+                {
+                    columns: [
+                        {
+                            width: '33%',  // กำหนดความกว้างให้เป็น 1/3 ของพื้นที่
+                            text: `(... ${doc.fullname || "-"} ...)`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        },
+                        {
+                            width: '33%',  // กำหนดความกว้างให้เป็น 1/3 ของพื้นที่
+                            text: `(... ${doc.managerName || "-"} ...)`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        },
+                        {
+                            width: '33%',  // กำหนดความกว้างให้เป็น 1/3 ของพื้นที่
+                            text: `(... ${doc.hrSignature || "-"} ...)`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        }
+                    ]
+                },
+                {
+                    columns: [
+                        {
+                            width: '33%',
+                            text: `วันที่ ${formatDate(doc.createdate)}`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        },
+                        {
+                            width: '33%',
+                            text: `แผนก... ผู้จัดการทั่วไป ...`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        },
+                        {
+                            width: '33%',
+                            text: `แผนก... ทรัพยากรบุคคล ...`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        }
+                    ]
+                },
+                {
+                    columns: [
+                        {
+                            width: '33%',
+                            text: ``,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        },
+                        {
+                            width: '33%',
+                            text: `วันที่ ${formatDate(doc.approvedDate)}`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        },
+                        {
+                            width: '33%',
+                            text: `วันที่ ${formatDate(doc.hrApprovedDate)}`,
+                            alignment: 'center',
+                            margin: [0, 10, 0, 0]
+                        }
+                    ]
+                },
+            ],
+            styles: {
+                header: {
+                    fontSize: 18,
+                    bold: true,
+                    alignment: "center"
+                },
+                subheader: {
+                    fontSize: 18,
+                    bold: true,
+                    margin: [0, 10, 0, 5]
+                }
+            },
+            defaultStyle: {
+                font: "THSarabunNew",
+                fontSize: 16, // ตั้งค่าขนาดฟ้อนต์เป็น 16
+            },
+        };
+
+        pdfMake.createPdf(docDefinition).download("เอกสารใบลา.pdf");
+    };
 
     const setdetailFromView = async (from) => {
         console.log(from)
@@ -107,23 +401,29 @@ const HRView = () => {
     const fetchHistory = async (documentid) => {
         try {
             const res = await axios.get(`https://localhost:7039/api/Document/GetDocumentWithHistory/${documentid}`);
-            console.log("fetchHistory", res.data.historyleave)
+            console.log("📌 ข้อมูลที่ได้จาก API fetchHistory:", res.data.historyleave);
 
             const historyRes = res.data.historyleave;
+            sethistoryState(historyRes);
 
-            sethistoryState(historyRes)
+            return historyRes; // ✅ คืนค่าข้อมูลเพื่อนำไปใช้ต่อ
         } catch (e) {
-            console.log(e)
+            console.log("❌ Error fetching history:", e);
+            return null;
         }
-    }
+    };
     const fetchHRForms = async () => {
         try {
             const response = await fetch("https://localhost:7039/api/Document/GetPendingFormsForHR");
-
+    
             if (response.ok) {
                 const data = await response.json();
-                console.log("📌 ฟอร์มที่โหลดมา:", data);
-                setHrForms(data); // ✅ โหลดข้อมูลใหม่
+                console.log("📌 ข้อมูลจาก API:", data);
+    
+                // ✅ กรองเฉพาะฟอร์มที่ GM อนุมัติแล้ว แต่ HR ยังไม่ได้อนุมัติ
+                const filteredForms = data.filter((form) => form.status === "pending_hr");
+    
+                setHrForms(filteredForms);
             } else {
                 console.warn("❌ ไม่พบฟอร์มที่ต้องอนุมัติ");
                 setHrForms([]);
@@ -132,20 +432,47 @@ const HRView = () => {
             console.error("❌ Error fetching HR pending forms:", error);
         }
     };
+    
+
     const fetchApprovedForms = async () => {
         try {
             const response = await fetch("https://localhost:7039/api/Document/GetApprovedFormsForHR");
 
             if (response.ok) {
-                const data = await response.json();
-                setHrApprovedForms(data); // ✅ โหลดข้อมูลฟอร์มที่ HR อนุมัติแล้วจากฐานข้อมูล
+                const apiData = await response.json();
+
+                if (apiData.length === 0) {
+                    console.warn("❌ API ไม่ส่งข้อมูลกลับมา, ใช้ข้อมูลจาก Local Storage");
+                    // ✅ ใช้ข้อมูลที่บันทึกไว้ก่อนหน้าแทน
+                    const storedHrApprovedForms = JSON.parse(localStorage.getItem("hrApprovedForms")) || [];
+                    setHrApprovedForms(storedHrApprovedForms);
+                    return;
+                }
+
+                // ✅ รวมข้อมูลจาก API + Local Storage ป้องกันค่าหาย
+                const storedHrApprovedForms = JSON.parse(localStorage.getItem("hrApprovedForms")) || [];
+                const mergedForms = [...storedHrApprovedForms, ...apiData].reduce((acc, form) => {
+                    acc[form.documentId] = form; // ใช้ documentId เป็น key ป้องกันค่าซ้ำ
+                    return acc;
+                }, {});
+
+                const finalForms = Object.values(mergedForms);
+                setHrApprovedForms(finalForms);
+                localStorage.setItem("hrApprovedForms", JSON.stringify(finalForms)); // ✅ บันทึกลง Local Storage
             } else {
-                setHrApprovedForms([]); // ตั้งค่าเป็นอาร์เรย์ว่าง
+                console.error("❌ API Error:", response.status);
+                // ✅ ถ้า API มีปัญหา ใช้ข้อมูลจาก Local Storage
+                const storedHrApprovedForms = JSON.parse(localStorage.getItem("hrApprovedForms")) || [];
+                setHrApprovedForms(storedHrApprovedForms);
             }
         } catch (error) {
             console.error("❌ Error fetching approved HR forms:", error);
+            // ✅ ถ้ามีข้อผิดพลาด ใช้ข้อมูลจาก Local Storage
+            const storedHrApprovedForms = JSON.parse(localStorage.getItem("hrApprovedForms")) || [];
+            setHrApprovedForms(storedHrApprovedForms);
         }
     };
+
 
     const handleEditHRSignature = async () => {
         if (!selectedFormForEdit || !selectedFormForEdit.documentId) {
@@ -213,8 +540,17 @@ const HRView = () => {
             if (response.ok) {
                 setModalMessage("✅ ส่งเอกสารให้พนักงานสำเร็จ!");
 
-                // ✅ ลบฟอร์มที่ถูกส่งออกจากรายการที่อนุมัติแล้ว
-                setHrApprovedForms(prevForms => prevForms.filter(f => f.documentId !== form.documentId));
+                // ✅ อัปเดต `sentForms` และบันทึกลง Local Storage
+                const updatedSentForms = { ...sentForms, [form.documentId]: true };
+                setSentForms(updatedSentForms);
+                localStorage.setItem("sentForms", JSON.stringify(updatedSentForms));
+
+                // ✅ อัปเดต `hrApprovedForms` และบันทึกลง Local Storage
+                const updatedHrApprovedForms = hrApprovedForms.map(f =>
+                    f.documentId === form.documentId ? { ...f, sent: true } : f
+                );
+                setHrApprovedForms(updatedHrApprovedForms);
+                localStorage.setItem("hrApprovedForms", JSON.stringify(updatedHrApprovedForms));
             } else {
                 setModalMessage("❌ ไม่สามารถส่งเอกสารให้พนักงานได้");
             }
@@ -226,6 +562,33 @@ const HRView = () => {
         }
     };
 
+
+    useEffect(() => {
+        fetchApprovedForms();
+        const storedSentForms = JSON.parse(localStorage.getItem("sentForms")) || {};
+        setSentForms(storedSentForms);
+
+        // ✅ โหลด `hrApprovedForms` จาก Local Storage ก่อน
+        const storedHrApprovedForms = JSON.parse(localStorage.getItem("hrApprovedForms")) || [];
+        setHrApprovedForms(storedHrApprovedForms);
+
+        // ✅ โหลดข้อมูลใหม่จาก API และรวมกับ Local Storage
+        fetchApprovedForms().then((apiForms) => {
+            if (apiForms) {
+                // ✅ รวมข้อมูลจาก Local Storage และ API ป้องกันค่าหาย
+                const mergedForms = [...apiForms, ...storedHrApprovedForms].reduce((acc, form) => {
+                    acc[form.documentId] = form; // ใช้ documentId เป็น key ป้องกันค่าซ้ำ
+                    return acc;
+                }, {});
+
+                const finalForms = Object.values(mergedForms); // แปลงกลับเป็น array
+                setHrApprovedForms(finalForms);
+                localStorage.setItem("hrApprovedForms", JSON.stringify(finalForms)); // ✅ บันทึกข้อมูลลง Local Storage
+            }
+        }).catch((error) => {
+            console.error("❌ Error fetching approved HR forms:", error);
+        });
+    }, []);
 
 
     return (
@@ -246,7 +609,7 @@ const HRView = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {hrForms.map((form, index) => (
+                            {hrForms.filter((form) => form.status === "pending_hr").map((form, index) => (
                                 <tr key={form.id || index}>
                                     <td className="font-FontNoto">{index + 1}</td>
                                     <td className="font-FontNoto">{form.fullname}</td>
@@ -334,11 +697,12 @@ const HRView = () => {
                                 <th className="font-FontNoto text-center">ความคิดเห็น</th>
                                 <th className="font-FontNoto text-center">วันที่อนุมัติ</th>
                                 <th className="font-FontNoto text-center">ลายเซ็น HR</th>
+                                <th className="font-FontNoto text-center">สถานะ</th>
                                 <th className="font-FontNoto text-center">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {hrApprovedForms.map((form, index) => (
+                            {[...hrApprovedForms].sort((a, b) => (sentForms[a.documentId] ? 1 : -1)).map((form, index) => (
                                 <tr key={`${form.id}-${index}`}>  {/* ใช้ combination ของ `form.id` และ `index` เพื่อให้ key เป็นเอกลักษณ์ */}
                                     <td className="font-FontNoto text-center">{index + 1}</td>
                                     <td className="font-FontNoto text-center">{form.fullname}</td>
@@ -348,19 +712,33 @@ const HRView = () => {
                                     <td className="font-FontNoto text-center">{formatDate(form?.hrApprovedDate)}</td>
                                     <td className="font-FontNoto text-center">{form.hrSignature}</td>
 
-                                    <td className="font-FontNoto text-center">
+                                    <td className="font-FontNoto text-center" style={{ color: sentForms[form.documentId] ? 'green' : 'red' }}>
+                                        {sentForms[form.documentId] ? "ส่งแล้ว" : "ยังไม่ส่ง"}
+                                    </td>
+
+                                    <td className="font-FontNoto text-center flex space-x-2">
                                         <button
-                                            className="btn btn-sm btn-outline btn-primary"
-                                            onClick={() => handleSendToEmployee(form)} // ✅ กดแล้วเอกสารจะถูกบันทึกลงฐานข้อมูล
+                                            className="btn btn-sm btn-outline btn-info font-FontNoto"
+                                            onClick={() => handleOpenModal(form)}
                                         >
-                                            ส่งให้พนักงาน
+                                            ดูไฟล์
                                         </button>
-                                        <button
-                                            className="btn btn-sm btn-outline btn-warning ml-2"
-                                            onClick={() => setSelectedFormForEdit(form)} // เปิด Modal แก้ไข
-                                        >
-                                            แก้ไข
-                                        </button>
+                                        {!sentForms[form.documentId] && (
+                                            <button
+                                                className="btn btn-sm btn-outline btn-primary font-FontNoto text-center"
+                                                onClick={() => handleSendToEmployee(form)}
+                                            >
+                                                ส่งให้พนักงาน
+                                            </button>
+                                        )}
+                                        {!sentForms[form.documentId] && (
+                                            <button
+                                                className="btn btn-sm btn-outline btn-warning font-FontNoto text-center"
+                                                onClick={() => setSelectedFormForEdit(form)}
+                                            >
+                                                แก้ไข
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
@@ -536,7 +914,6 @@ const HRView = () => {
                 )}
 
             </section>
-
         </div>
     );
 };

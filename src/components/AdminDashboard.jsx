@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { NavLink } from 'react-router-dom';
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
+import logo from "../assets/1.png";
 import DIcon from '../assets/12.png';
 import { GetUser } from '../function/apiservice'
 import {
@@ -61,7 +62,7 @@ const AdminDashboard = () => {
     "1799ABEB-158C-479E-A9DC-7D45E224E8ED": "ใบลากิจ",
     "DAA14555-28E7-497E-B1D8-E0DA1F1BE283": "ใบลาคลอด",
     "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "ใบลาบวช",
-};
+  };
 
   const fectUserinfo = async () => {
     try {
@@ -91,8 +92,19 @@ const AdminDashboard = () => {
         const response = await axios.get("https://localhost:7039/api/Files");
         const leaveResponse = await axios.get("https://localhost:7039/api/Document/GetAllCommitedDocuments");
 
-        setLeaveData(leaveResponse.data); // ✅ เก็บข้อมูลใบลา
+        // ✅ กรองข้อมูลเฉพาะปีที่เลือก
+        const filteredFiles = response.data.filter(doc =>
+          new Date(doc.uploadDate).getFullYear() === selectedYear
+        );
 
+        const filteredLeaves = leaveResponse.data.filter(doc =>
+          new Date(doc.startdate).getFullYear() === selectedYear
+        );
+
+        setFilesData(filteredFiles);
+        setLeaveData(filteredLeaves);
+
+        // ✅ คำนวณ `categoryCounts` ให้ตรงกับปีที่เลือก
         const counts = {
           'ใบลาป่วย': 0,
           'ใบลากิจ': 0,
@@ -103,33 +115,57 @@ const AdminDashboard = () => {
           'อื่นๆ': 0
         };
 
-        // ✅ นับจำนวนเอกสารอัปโหลด
-        response.data.forEach((doc) => {
+        filteredFiles.forEach((doc) => {
           const category = categoryMapping[doc.category] || 'อื่นๆ';
           counts[category] = (counts[category] || 0) + 1;
         });
 
-        // ✅ นับจำนวนใบลา และรวมเข้ากับประเภทที่ตรงกัน
-        leaveResponse.data.forEach((doc) => {
+        filteredLeaves.forEach((doc) => {
           const category = categoryMappingg[doc.leaveTypeId.toUpperCase()] || "อื่นๆ";
           counts[category] = (counts[category] || 0) + 1;
         });
 
         setCategoryCounts(counts);
-        setFilesData(response.data);
         setStatistics(prevStats => ({
           ...prevStats,
-          totalDocuments: response.data.length + leaveResponse.data.length, // ✅ รวมใบลาเข้าไปด้วย
+          totalDocuments: filteredFiles.length + filteredLeaves.length,
         }));
-
-        await fectUserinfo();
-
       } catch (error) {
         console.error("Error fetching document data:", error);
       }
     };
 
+    fetchDocuments();
+  }, [selectedYear]); // ✅ โหลดใหม่เมื่อปีเปลี่ยน
 
+  // ✅ โหลดข้อมูลโปรไฟล์แค่ครั้งเดียวตอนเปิดหน้า
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const responseUser = await GetUser();
+        console.log("Response from GetUser:", responseUser);
+
+        if (!responseUser || !responseUser.userid) {
+          throw new Error("User ID not found in response");
+        }
+
+        setuserinfoState(responseUser.userid);
+        setAdminName(responseUser.name || "ไม่มีชื่อแอดมิน");
+        setProfilePic(
+          responseUser.profilePictureUrl
+            ? `http://localhost${responseUser.profilePictureUrl}`
+            : "/uploads/admin/default-profile.jpg"
+        );
+      } catch (e) {
+        console.error("Error fetching user info:", e);
+      }
+    };
+
+    fetchUserInfo();
+  }, []); // ✅ ทำงานแค่ครั้งเดียว
+
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const employeeResponse = await axios.get("https://localhost:7039/api/Users");
@@ -142,9 +178,7 @@ const AdminDashboard = () => {
             totalEmployees: employeeResponse.data.length,
             totalExperience: experienceResponse.data.length,
           }));
-          fetchDocuments(); // Fetch document data
         }
-
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -153,7 +187,8 @@ const AdminDashboard = () => {
     };
 
     fetchData();
-  }, []);
+  }, []); // ✅ โหลดข้อมูลพนักงานครั้งเดียวตอนเปิดหน้า
+
 
 
   const handleProfilePicChange = (event) => {
@@ -384,11 +419,29 @@ const AdminDashboard = () => {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Navbar */}
-      <div className="navbar bg-amber-400 shadow-lg">
-        <div className="flex-1">
-          <div className="text-xl font-bold text-black bg-amber-400 p-4 rounded-md font-FontNoto">
-            ระบบจัดเก็บเอกสารพนักงาน
+      <div className="navbar bg-amber-400 shadow-lg flex justify-between items-center px-4 py-2">
+        <div className="flex items-center">
+          <div
+            className="flex items-center"
+            style={{
+              backgroundColor: "white",
+              border: "2px solid white",
+              borderRadius: "10px",
+              padding: "5px 10px",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            <img src={logo} className="h-8 w-auto mr-2" alt="Logo" />
+            <span style={{ color: "black", fontWeight: "bold" }}>THE </span>
+            &nbsp;
+            <span style={{ color: "#FF8800", fontWeight: "bold" }}>EXPERTISE </span>
+            &nbsp;
+            <span style={{ color: "black", fontWeight: "bold" }}>CO, LTD.</span>
           </div>
+        </div>
+        <div className="text-xl font-bold text-black bg-amber-400 p-4 rounded-md font-FontNoto">
+          ระบบจัดเก็บเอกสารพนักงาน
         </div>
       </div>
 

@@ -8,10 +8,12 @@ const ManagerView = () => {
     const [rolesState, setRolesState] = useState([]); // 🔥 โหลดข้อมูลแผนก
     const [leavetpyeState, setLeavetpyeState] = useState([]); // 🔥 โหลดประเภทการลา
 
+
     const [managerName, setManagerName] = useState("");
     const [managerComment, setManagerComment] = useState("");
     const [approvedForms, setApprovedForms] = useState([]); // ฟอร์มที่อนุมัติแล้ว
     const [selectedFormForEdit, setSelectedFormForEdit] = useState(null);
+    const [sentForms, setSentForms] = useState({});
 
     const roleName = rolesState.find(item => item.rolesid === selectedForm?.rolesid)?.rolesname || "ไม่ระบุ";
     const leaveTypeName = leavetpyeState.find(item => item.leaveTypeid === selectedForm?.leaveTypeId)?.leaveTypeTh || "ไม่ระบุ";
@@ -41,27 +43,56 @@ const ManagerView = () => {
         fetchRoles();
         fetchLeaveTypes();
         fetchDocumentByHRView();
-
+    
+        // ✅ โหลดฟอร์มจาก Local Storage และให้ยังคงอยู่ถ้าส่งไป HR แล้ว
+        const storedApprovedForms = JSON.parse(localStorage.getItem("approvedForms")) || [];
+        const filteredApprovedForms = storedApprovedForms.filter(
+            (form) => form.status === "manager_approved" || form.status === "pending_hr"
+        );
+    
+        setApprovedForms(filteredApprovedForms);
     }, []);
-    const fetchDocumentByHRView = async (docstatus) => {
+    
 
+    // ✅ โหลดเอกสารที่รอการอนุมัติจาก HR
+    const fetchDocumentByHRView = async () => {
+        try {
+            const response = await fetch("https://localhost:7039/api/Document/GetApprovedFormsForManager");
 
-        const response = await fetch(`https://localhost:7039/api/Document/GetPendingFormsForHR`);
-        if (response.ok) {
-            const data = await response.json();
-            setApprovedForms(data);
+            if (response.ok) {
+                const apiData = await response.json();
+                console.log("📌 ข้อมูลจาก API:", apiData);
+
+                // ✅ กรองเฉพาะฟอร์มที่ GM อนุมัติแล้ว
+                const approvedForms = apiData.filter((form) => form.status === "manager_approved");
+
+                // ✅ บันทึกลง Local Storage เพื่อให้ค้างไว้
+                localStorage.setItem("approvedForms", JSON.stringify(approvedForms));
+                setApprovedForms(approvedForms);
+            } else {
+                console.warn("❌ ไม่พบฟอร์มที่ GM อนุมัติแล้ว");
+                const storedApprovedForms = JSON.parse(localStorage.getItem("approvedForms")) || [];
+                setApprovedForms(storedApprovedForms);
+            }
+        } catch (error) {
+            console.error("❌ Error fetching approved GM forms:", error);
+            const storedApprovedForms = JSON.parse(localStorage.getItem("approvedForms")) || [];
+            setApprovedForms(storedApprovedForms);
         }
-    }
+    };
+
+
+    // ✅ เพิ่ม ID ให้กับฟอร์ม ถ้ายังไม่มี
     const addIdToForm = (form) => ({
         ...form,
-        id: form.id || Date.now(), // สร้าง id ถ้ายังไม่มี
-        userId: form.userId || sessionStorage.getItem("userId"), // เก็บ userId เดิมถ้ามีอยู่
+        id: form.id || Date.now(), // ✅ ถ้ายังไม่มี id ให้สร้างใหม่
+        userId: form.userId || sessionStorage.getItem("userId"), // ✅ ใช้ userId ที่มีอยู่ใน sessionStorage
     });
 
-    // ฟังก์ชันดูรายละเอียดฟอร์ม
+    // ✅ ฟังก์ชันดูรายละเอียดฟอร์ม
     const viewPendingFormDetails = (form) => {
         setSelectedPendingForm(form);
-        setIsEditing(false); // ยกเลิกการแก้ไข
+        setIsEditing(false); // ✅ ปิดโหมดแก้ไข
     };
 
     const viewHRFormDetails = async (form) => {
@@ -206,10 +237,6 @@ const ManagerView = () => {
         localStorage.setItem("hrForms", JSON.stringify(updatedHrForms));
     };
 
-    // ฟังก์ชันแสดง Modal ยืนยันการลบ
-    const confirmDelete = (form) => {
-        setSelectedFormToDelete(form);
-    };
 
     // ฟังก์ชันปิด Modal
     const closeDeleteModal = () => {
@@ -218,7 +245,6 @@ const ManagerView = () => {
     const approveForm = async () => {
         if (!selectedForm) return;
 
-        // ตรวจสอบว่าชื่อ GM ถูกกรอกหรือไม่
         if (!managerName.trim()) {
             setModalState({
                 isOpen: true,
@@ -229,22 +255,11 @@ const ManagerView = () => {
             return;
         }
 
-        // ตรวจสอบค่า DocumentID
-        if (!selectedForm.documentId || typeof selectedForm.documentId !== "string") {
-            setModalState({
-                isOpen: true,
-                title: "⚠️ ข้อมูลผิดพลาด!",
-                message: "DocumentID ของฟอร์มไม่ถูกต้อง กรุณาลองใหม่",
-                type: "error",
-            });
-            return;
-        }
-
         const approvalData = {
             DocumentID: selectedForm.documentId,
             ManagerName: managerName.trim(),
             ManagerComment: managerComment.trim(),
-            HRSignature: "", // ✅ ยังไม่ส่งไป HR
+            Status: "manager_approved", // ✅ อัปเดตสถานะเป็น "manager_approved"
         };
 
         try {
@@ -253,8 +268,6 @@ const ManagerView = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(approvalData),
             });
-
-            const responseData = await response.json();
 
             if (response.ok) {
                 setModalState({
@@ -272,16 +285,17 @@ const ManagerView = () => {
                             approvedDate: new Date().toISOString(),
                             managerName,
                             managerComment,
+                            status: "manager_approved", // ✅ เปลี่ยนเป็น "manager_approved"
+                            sent: false,
                         },
                     ];
 
-                    // ✅ บันทึกลง LocalStorage เพื่อให้ข้อมูลไม่หาย
+                    // ✅ บันทึกลง Local Storage เพื่อให้ค้างไว้ตลอด
                     localStorage.setItem("approvedForms", JSON.stringify(updatedForms));
-
                     return updatedForms;
                 });
 
-                // เอาฟอร์มออกจากรายการรออนุมัติ
+                // ✅ เอาฟอร์มออกจาก "ฟอร์มจากพนักงาน"
                 setPendingForms((prev) =>
                     prev.filter((form) => form.documentId !== selectedForm.documentId)
                 );
@@ -305,45 +319,61 @@ const ManagerView = () => {
         }
     };
 
-
-    // ฟังก์ชันส่งฟอร์มให้ HR
-    const sendToHR = (form) => {
-        if (!form.userId) {
+    const sendToHR = async (form) => {
+        if (!form || !form.documentId) {
             setModalState({
                 isOpen: true,
                 title: "⚠️ ไม่สามารถส่งให้ HR ได้",
-                message: "ฟอร์มนี้ไม่มี userId กรุณาตรวจสอบข้อมูลก่อนส่งให้ HR",
+                message: "ไม่พบข้อมูลเอกสาร กรุณาตรวจสอบอีกครั้ง",
                 type: "error",
             });
             return;
         }
-
-        // ✅ เพิ่มวันที่ส่งให้ HR
-        const updatedForm = {
-            ...form,
-            sentToHRDate: new Date().toLocaleDateString(),
-        };
-
-        // ✅ อัปเดตรายการฟอร์มที่ส่งให้ HR
-        const updatedHrForms = [...hrForms, updatedForm];
-
-        // ✅ เอาฟอร์มนี้ออกจากรายการที่ GM เห็น
-        const updatedApprovedForms = approvedForms.filter((f) => f.documentId !== form.documentId);
-
-        // ✅ อัปเดต state และ localStorage
-        setHrForms(updatedHrForms);
-        setApprovedForms(updatedApprovedForms);
-        localStorage.setItem("hrForms", JSON.stringify(updatedHrForms));
-        localStorage.setItem("approvedForms", JSON.stringify(updatedApprovedForms));
-
-        setModalState({
-            isOpen: true,
-            title: "📩 ส่งฟอร์มไป HR สำเร็จ!",
-            message: "HR จะเห็นฟอร์มนี้แล้ว",
-            type: "success",
-        });
+    
+        try {
+            const response = await fetch(`https://localhost:7039/api/Document/SendToHR/${form.documentId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+            });
+    
+            if (response.ok) {
+                setModalState({
+                    isOpen: true,
+                    title: "📩 ส่งฟอร์มไป HR สำเร็จ!",
+                    message: "HR จะเห็นฟอร์มนี้แล้ว",
+                    type: "success",
+                });
+    
+                // ✅ เปลี่ยน `status` เป็น "pending_hr" แต่ยังค้างอยู่ใน `approvedForms`
+                setApprovedForms((prev) =>
+                    prev.map((f) =>
+                        f.documentId === form.documentId
+                            ? { ...f, status: "pending_hr" }
+                            : f
+                    )
+                );
+    
+                // ✅ บันทึกลง Local Storage เพื่อให้ค้างไว้
+                const updatedApprovedForms = JSON.parse(localStorage.getItem("approvedForms")) || [];
+                const newApprovedForms = updatedApprovedForms.map((f) =>
+                    f.documentId === form.documentId
+                        ? { ...f, status: "pending_hr" }
+                        : f
+                );
+                localStorage.setItem("approvedForms", JSON.stringify(newApprovedForms));
+            } else {
+                throw new Error("ไม่สามารถส่งฟอร์มให้ HR ได้");
+            }
+        } catch (error) {
+            setModalState({
+                isOpen: true,
+                title: "❌ เกิดข้อผิดพลาด!",
+                message: "ไม่สามารถส่งฟอร์มไป HR ได้ กรุณาลองใหม่",
+                type: "error",
+            });
+        }
     };
-
+    
 
     // ฟังก์ชันแก้ไขฟอร์ม
     const editApprovedForm = (form) => {
@@ -415,21 +445,23 @@ const ManagerView = () => {
                         </tr>
                     </thead>
                     <tbody className="text-center text-black">
-                        {pendingForms.map((form, index) => (
-                            <tr key={form.documentId}>
-                                <td className="font-FontNoto">{index + 1}</td>
-                                <td className="font-FontNoto">{form.fullname}</td>
-                                <td className="font-FontNoto">{formatDate(form.createdate)}</td>
-                                <td>
-                                    <button
-                                        className="btn btn-sm btn-outline btn-info font-FontNoto mr-2"
-                                        onClick={() => viewFormDetails(form)}
-                                    >
-                                        👁️ ดูข้อมูล
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
+                        {pendingForms
+                            .filter((form) => form.status === "pending_manager") // ✅ ฟิลเตอร์เฉพาะฟอร์มที่ยังรออนุมัติ
+                            .map((form, index) => (
+                                <tr key={form.documentId}>
+                                    <td className="font-FontNoto">{index + 1}</td>
+                                    <td className="font-FontNoto">{form.fullname}</td>
+                                    <td className="font-FontNoto">{formatDate(form.createdate)}</td>
+                                    <td>
+                                        <button
+                                            className="btn btn-sm btn-outline btn-info font-FontNoto mr-2"
+                                            onClick={() => viewFormDetails(form)}
+                                        >
+                                            👁️ ดูข้อมูล
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
                     </tbody>
                 </table>
             ) : (
@@ -599,36 +631,62 @@ const ManagerView = () => {
                             <th className="font-FontNoto">วันที่อนุมัติ</th>
                             <th className="font-FontNoto">ลายเซ็นการอนุมัติ</th>
                             <th className="font-FontNoto">ความคิดเห็น</th>
+                            <th className="font-FontNoto text-center">สถานะ</th>
                             <th className="font-FontNoto text-center">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {approvedForms.map((form, index) => (
-                            <tr key={form.id || index}>
-                                <td className="font-FontNoto">{index + 1}</td>
-                                <td className="font-FontNoto">{form.fullname}</td>
-                                <td className="font-FontNoto">{formatDate(form.approvedDate)}</td>
-                                <td className="font-FontNoto">{form.managerName}</td>
-                                <td className="font-FontNoto">{form.managerComment}</td>
-                                <td className="flex flex-col gap-2">
+                        {approvedForms
+                            .map((form, index) => (
+                                <tr key={form.documentId || index}>
+                                    <td className="font-FontNoto">{index + 1}</td>
+                                    <td className="font-FontNoto">{form.fullname}</td>
+                                    <td className="font-FontNoto">{formatDate(form.approvedDate)}</td>
+                                    <td className="font-FontNoto">{form.managerName}</td>
+                                    <td className="font-FontNoto">{form.managerComment}</td>
 
-                                    <button
-                                        className="btn btn-sm btn-outline btn-warning font-FontNoto"
-                                        onClick={() => editApprovedForm(form)}
-                                    >
-                                        แก้ไข
-                                    </button>
-                                    <button
-                                        className="btn btn-sm btn-outline btn-secondary font-FontNoto"
-                                        onClick={() => viewHRFormDetails(form)}
-                                    >
-                                        ดูข้อมูล
-                                    </button>
+                                    {/* ✅ แสดงสถานะการส่ง */}
+                                    <td className="font-FontNoto text-center" style={{ color: form.status === "pending_hr" ? 'green' : 'red' }}>
+                                        {form.status === "pending_hr" ? "📩 ส่งถึงแล้ว" : "ยังไม่ส่ง"}
+                                    </td>
 
-                                </td>
-                            </tr>
-                        ))}
+                                    {/* ✅ ปุ่มจัดการ */}
+                                    <td className="flex flex-row gap-2 items-center text-center">
+                                        {/* ✅ ปุ่ม "ดูข้อมูล" แสดงตลอด */}
+                                        <button
+                                            className="btn btn-sm btn-outline btn-secondary font-FontNoto text-center"
+                                            onClick={() => viewHRFormDetails(form)}
+                                        >
+                                            ดูข้อมูล
+                                        </button>
+
+                                        {/* ✅ ถ้ายังไม่ได้ส่งไป HR (`manager_approved`) แสดงปุ่ม "แก้ไข" และ "ส่งให้ HR" */}
+                                        {form.status === "manager_approved" ? (
+                                            <>
+                                                <button
+                                                    className="btn btn-sm btn-outline btn-warning font-FontNoto text-center"
+                                                    onClick={() => editApprovedForm(form)}
+                                                >
+                                                    แก้ไข
+                                                </button>
+
+                                                <button
+                                                    className="btn btn-sm btn-outline btn-primary text-center"
+                                                    onClick={() => sendToHR(form)}
+                                                >
+                                                    📩 ส่งให้ HR
+                                                </button>
+                                            </>
+                                        ) : (
+                                            /* ✅ ถ้าส่งไป HR แล้ว แสดงข้อความ "📩 ส่งถึงแล้ว" และไม่โชว์ปุ่ม */
+                                            <span className=""></span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
                     </tbody>
+
+
                 </table>
             ) : (
                 <p className="font-FontNoto text-center">ยังไม่มีฟอร์มที่อนุมัติ</p>
@@ -826,6 +884,7 @@ const ManagerView = () => {
                     </div>
                 </dialog>
             )}
+
         </div>
     );
 };

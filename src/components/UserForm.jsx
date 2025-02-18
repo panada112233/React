@@ -4,7 +4,7 @@ import axios from "axios";
 import { NavLink } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { GetUser } from '../function/apiservice';
-
+import logo from "../assets/1.png";
 
 const UserForm = () => {
   const { id } = useParams();
@@ -253,11 +253,29 @@ const UserForm = () => {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Navbar */}
-      <div className="navbar bg-amber-400 shadow-lg">
-        <div className="flex-1">
-          <div className="text-xl font-bold text-black bg-amber-400 p-4 rounded-md font-FontNoto">
-            ระบบจัดเก็บเอกสารพนักงาน
+      <div className="navbar bg-amber-400 shadow-lg flex justify-between items-center px-4 py-2">
+        <div className="flex items-center">
+          <div
+            className="flex items-center"
+            style={{
+              backgroundColor: "white",
+              border: "2px solid white",
+              borderRadius: "10px",
+              padding: "5px 10px",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            <img src={logo} className="h-8 w-auto mr-2" alt="Logo" />
+            <span style={{ color: "black", fontWeight: "bold" }}>THE </span>
+            &nbsp;
+            <span style={{ color: "#FF8800", fontWeight: "bold" }}>EXPERTISE </span>
+            &nbsp;
+            <span style={{ color: "black", fontWeight: "bold" }}>CO, LTD.</span>
           </div>
+        </div>
+        <div className="text-xl font-bold text-black bg-amber-400 p-4 rounded-md font-FontNoto">
+          ระบบจัดเก็บเอกสารพนักงาน
         </div>
       </div>
       <div className="min-h-screen bg-base-200 flex">

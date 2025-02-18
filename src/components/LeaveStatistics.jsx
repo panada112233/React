@@ -25,7 +25,7 @@ const LeaveStatistics = () => {
 
   const categoryMapping = {
     Certificate: 'ลาป่วย',
-    WorkContract: 'ลากิจส่วนตัว',
+    WorkContract: 'ลากิจ',
     Identification: 'ลาพักร้อน',
     Maternity: 'ลาคลอด',
     Ordination: 'ลาบวช',
@@ -44,8 +44,9 @@ const LeaveStatistics = () => {
         const filesResponse = await axios.get("https://localhost:7039/api/Files");
         const usersResponse = await axios.get("https://localhost:7039/api/Users");
         const leaveResponse = await axios.get("https://localhost:7039/api/Document/GetAllCommitedDocuments");
-      
-       
+
+        console.log("📌 จำนวนพนักงานที่ดึงมา:", usersResponse.data.length);
+
         const userMapping = usersResponse.data.reduce((acc, user) => {
           acc[user.userID] = `${user.firstName} ${user.lastName}`;
           return acc;
@@ -66,55 +67,97 @@ const LeaveStatistics = () => {
         });
 
         leaveResponse.data.forEach((doc) => {
-          console.log(doc)
-          const docDate = new Date(doc.sentToHrdate)
-          
-          if (docDate.getMonth() === selectedMonth &&
-            docDate.getFullYear() === selectedYear) {
-              console.log("data in date ",doc)
-
-
-            const leaveName =   categoryMappingg[doc.leaveTypeId.toLocaleUpperCase()]
-            
-            const userName = userMapping[doc.userId] || "Unknown";
-            if (leaveName) {
-              groupedData[userName][leaveName] = (groupedData[userName][leaveName] || 0) + 1;
-              categoryCountData[leaveName] = (categoryCountData[leaveName] || 0) + 1;
-            }
+          if (!doc || !doc.userId) {
+            console.warn("⚠️ พบข้อมูลเอกสารที่ไม่มี userId:", doc);
+            return;
           }
-        })
-
+  
+          const docDate = new Date(doc.sentToHrdate);
+          if (docDate.getMonth() === selectedMonth && docDate.getFullYear() === selectedYear) {
+            const leaveTypeKey = doc.leaveTypeId?.trim().toUpperCase();
+            console.log("🔍 ตรวจสอบ leaveTypeKey:", leaveTypeKey);
+            console.log("🛠️ categoryMappingg:", categoryMappingg);
+  
+            if (!categoryMappingg.hasOwnProperty(leaveTypeKey)) {
+              console.warn("⚠️ ไม่มีค่าใน categoryMappingg สำหรับ leaveTypeKey:", leaveTypeKey);
+              return;
+            }
+  
+            const leaveName = categoryMappingg[leaveTypeKey];
+            console.log("📌 leaveName ที่ได้:", leaveName);
+  
+            if (!leaveName) {
+              console.warn("⚠️ ไม่พบประเภทใบลา:", leaveTypeKey);
+              return;
+            }
+  
+            const userName = userMapping[doc.userId];
+  
+            if (!userName || userName === "Unknown") {
+              console.warn("⚠️ ข้ามข้อมูลของพนักงานที่ไม่รู้จัก:", doc);
+              return;
+            }
+  
+            console.log("👤 userName:", userName);
+  
+            if (!groupedData[userName]) {
+              groupedData[userName] = {};
+            }
+  
+            if (!groupedData[userName].hasOwnProperty(leaveName)) {
+              console.warn(`⚠️ ไม่พบประเภทใบลา '${leaveName}' ใน groupedData[${userName}]. กำหนดค่าเริ่มต้นเป็น 0`);
+              groupedData[userName][leaveName] = 0;
+            }
+  
+            groupedData[userName][leaveName] += 1;
+            categoryCountData[leaveName] = (categoryCountData[leaveName] || 0) + 1;
+          }
+        });
+  
         filesResponse.data
-          .filter((file) => file.category !== "Others" && file.category !== "Doc") // กรอง Others และ Doc
+          .filter((file) => file.category !== "Others" && file.category !== "Doc")
           .forEach((file) => {
+            if (!file || !file.userID) {
+              console.warn("⚠️ พบไฟล์ที่ไม่มี userID:", file);
+              return;
+            }
+  
             const fileDate = new Date(file.uploadDate);
-            if (
-              fileDate.getMonth() === selectedMonth &&
-              fileDate.getFullYear() === selectedYear
-            ) {
-              const userName = userMapping[file.userID] || "Unknown";
+            if (fileDate.getMonth() === selectedMonth && fileDate.getFullYear() === selectedYear) {
+              const userName = userMapping[file.userID];
+  
+              if (!userName || userName === "Unknown") {
+                console.warn("⚠️ ข้ามเอกสารของพนักงานที่ไม่รู้จัก:", file);
+                return;
+              }
+  
               const thaiCategory = categoryMapping[file.category];
-              console.log(file.category)
-
+  
               if (thaiCategory) {
+                if (!groupedData[userName]) {
+                  groupedData[userName] = {};
+                }
+  
                 groupedData[userName][thaiCategory] = (groupedData[userName][thaiCategory] || 0) + 1;
                 categoryCountData[thaiCategory] = (categoryCountData[thaiCategory] || 0) + 1;
               }
-
-
             }
           });
-
-        setEmployeeNames(Object.keys(groupedData));
+  
+        setEmployeeNames(Object.keys(groupedData).filter(name => name !== "Unknown"));
         setFileData(groupedData);
-        setCategoryCounts(categoryCountData); // อัปเดตข้อมูลประเภทเอกสาร
+        setCategoryCounts(categoryCountData);
+  
+        console.log("📌 รายชื่อพนักงานที่ได้หลังอัปเดต:", Object.keys(groupedData));
+  
       } catch (error) {
-        console.error("Error fetching file data:", error);
+        console.error("❌ Error fetching file data:", error);
       }
     };
-
+  
     fetchFileData();
   }, [selectedMonth, selectedYear]);
+
 
   const createChartData = () => {
     const totalDocuments = employeeNames.map((name) =>
@@ -122,11 +165,11 @@ const LeaveStatistics = () => {
     );
 
     const colors = [
-      "#66FF99",
-      "#66CCFF",
-      "#FF3366",
-      "#FF99CC",
-      "#FFC300",
+      "#4CAF50", // เขียวสดใส (ใบลาป่วย)
+      "#2196F3", // ฟ้าเข้ม (ใบลากิจ)
+      "#FF5722", // ส้มเข้ม (ใบลาพักร้อน)
+      "#E91E63", // ชมพูสด (ใบลาคลอด)
+      "#FFC107", // เหลืองสด (ใบลาบวช)
     ];
 
     const datasets = [
@@ -138,7 +181,7 @@ const LeaveStatistics = () => {
       {
         label: "รวมใบลา",
         data: totalDocuments,
-        backgroundColor: "#778899", // สีสำหรับข้อมูลรวม
+        backgroundColor: "#607D8B", // สีสำหรับข้อมูลรวม
       },
     ];
 

@@ -62,8 +62,19 @@ const TrendStatistics = () => {
                 const response = await axios.get("https://localhost:7039/api/Files");
                 const leaveResponse = await axios.get("https://localhost:7039/api/Document/GetAllCommitedDocuments");
 
-                setLeaveData(leaveResponse.data); // ✅ เก็บข้อมูลใบลาใน state
+                // ✅ กรองข้อมูลเฉพาะปีที่เลือก
+                const filteredFiles = response.data.filter(doc =>
+                    new Date(doc.uploadDate).getFullYear() === selectedYear
+                );
 
+                const filteredLeaves = leaveResponse.data.filter(doc =>
+                    new Date(doc.startdate).getFullYear() === selectedYear
+                );
+
+                setFilesData(filteredFiles);
+                setLeaveData(filteredLeaves);
+
+                // ✅ คำนวณ `categoryCounts` ให้ตรงกับปีที่เลือก
                 const counts = {
                     'ใบลาป่วย': 0,
                     'ใบลากิจ': 0,
@@ -74,28 +85,31 @@ const TrendStatistics = () => {
                     'อื่นๆ': 0
                 };
 
-                response.data.forEach((doc) => {
+                filteredFiles.forEach((doc) => {
                     const category = categoryMapping[doc.category] || 'อื่นๆ';
                     counts[category] = (counts[category] || 0) + 1;
                 });
 
-                leaveResponse.data.forEach((doc) => {
+                filteredLeaves.forEach((doc) => {
                     const category = categoryMappingg[doc.leaveTypeId.toUpperCase()] || "อื่นๆ";
                     counts[category] = (counts[category] || 0) + 1;
                 });
 
                 setCategoryCounts(counts);
-                setFilesData(response.data);
                 setStatistics(prevStats => ({
                     ...prevStats,
-                    totalDocuments: response.data.length + leaveResponse.data.length,
+                    totalDocuments: filteredFiles.length + filteredLeaves.length,
                 }));
             } catch (error) {
                 console.error("Error fetching document data:", error);
             }
         };
 
+        fetchDocuments();
+    }, [selectedYear]); // ✅ โหลดใหม่เมื่อปีเปลี่ยน
 
+
+    useEffect(() => {
         const fetchData = async () => {
             try {
                 const employeeResponse = await axios.get("https://localhost:7039/api/Users");
@@ -108,7 +122,6 @@ const TrendStatistics = () => {
                         totalEmployees: employeeResponse.data.length,
                         totalExperience: experienceResponse.data.length,
                     }));
-                    fetchDocuments(); // ✅ โหลดข้อมูลเอกสาร
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -118,7 +131,8 @@ const TrendStatistics = () => {
         };
 
         fetchData();
-    }, []);
+    }, []); // ✅ โหลดข้อมูลพนักงานครั้งเดียวตอนเปิดหน้า
+
 
     const handleYearChange = (e) => {
         setSelectedYear(parseInt(e.target.value));
@@ -131,49 +145,7 @@ const TrendStatistics = () => {
         return years;
     };
 
-    const createEmployeesChartData = () => {
-        const months = Array.from({ length: 12 }, (_, i) => `เดือน ${i + 1}`);
-        const employeeCounts = Array.from({ length: 12 }, (_, i) =>
-            employeeData.filter(
-                employee =>
-                    new Date(employee.createdAt).getFullYear() === selectedYear &&
-                    new Date(employee.createdAt).getMonth() === i
-            ).length
-        );
 
-        return {
-            labels: months,
-            datasets: [
-                {
-                    label: `จำนวนพนักงานที่เพิ่มในปี ${selectedYear}`,
-                    data: employeeCounts,
-                    backgroundColor: "#34D399",
-                },
-            ],
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: "top" },
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            font: {
-                                family: 'Noto Sans Thai, sans-serif', // ใช้ฟอนต์ Noto Sans Thai
-                            }
-                        }
-                    },
-                    y: {
-                        ticks: {
-                            font: {
-                                family: 'Noto Sans Thai, sans-serif', // ใช้ฟอนต์ Noto Sans Thai
-                            }
-                        }
-                    }
-                }
-            }
-        };
-    };
     const createDocumentsChartData = () => {
         const months = Array.from({ length: 12 }, (_, i) => `เดือน ${i + 1}`);
         const categories = Object.values(categoryMapping);

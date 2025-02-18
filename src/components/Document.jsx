@@ -40,7 +40,7 @@ function Document() {
   };
 
   const categoryMappingg = {
-    "A461E72F-B9A3-4F9D-BF69-1BBE6EA514EC": "ใบลาป่วย", 
+    "A461E72F-B9A3-4F9D-BF69-1BBE6EA514EC": "ใบลาป่วย",
     "6CF7C54A-F9BA-4151-A554-6487FDD7ED8D": "ใบลาพักร้อน",
     "1799ABEB-158C-479E-A9DC-7D45E224E8ED": "ใบลากิจ",
     "DAA14555-28E7-497E-B1D8-E0DA1F1BE283": "ใบลาคลอด",
@@ -96,17 +96,33 @@ function Document() {
   const fetchDocumentsFromHR = async () => {
     try {
       const response = await fetch(`https://localhost:7039/api/Document/GetCommitedDocumentsByUser/${userID}`);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.warn("ไม่มีเอกสารใบลา (API คืน 404)");
+          sethrdocunet([]); // ตั้งค่าเป็น array ว่าง เพื่อป้องกัน UI พัง
+          return;
+        }
+        throw new Error(`เกิดข้อผิดพลาด: ${response.statusText}`);
+      }
+
       const data = await response.json();
-      sethrdocunet(data);  // ✅ แก้ไขให้เก็บข้อมูลทั้งหมด
+      sethrdocunet(data);
       console.log("Commited Documents:", data);
-      await fetchHistory(data.documentId)
+
+      // ตรวจสอบว่า API ส่งข้อมูลมาหรือไม่ก่อนเรียก fetchHistory
+      if (data.length > 0) {
+        await fetchHistory(data[0].documentId);
+      }
     } catch (error) {
+      console.error("เกิดข้อผิดพลาดระหว่างดึงข้อมูล:", error);
+      sethrdocunet([]); // ป้องกัน UI พังถ้า API มีปัญหา
     }
   };
 
   useEffect(() => {
     fetchDocuments();
-    fetchDocumentsFromHR()
+    fetchDocumentsFromHR();
   }, []);
 
   const handleOpenModal = async (filePathOrDoc) => {
@@ -214,30 +230,41 @@ function Document() {
     const lowerSearchTerm = searchTerm.trim().toLowerCase(); // ตัดช่องว่างออกก่อนค้นหา
 
     if (lowerSearchTerm === "") {
-      // ถ้า searchTerm เป็นค่าว่าง ให้รีเซ็ตกลับไปเป็นค่าดั้งเดิมทั้งหมด
-      setFilteredDocuments(documents);
-      sethrdocunet(hrdocument);
+      // รีเซ็ตค่ากลับไปเป็นข้อมูลทั้งหมดตามแท็บที่เลือก
+      if (activeTab === "leave") {
+        sethrdocunet([...hrdocument]); // ใช้ spread operator เพื่อให้ React รู้ว่ามีการเปลี่ยนแปลง
+      } else {
+        setFilteredDocuments([...documents]);
+      }
       return;
     }
 
-    // ค้นหาในเอกสารอัปโหลด
-    const filteredUploads = documents.filter(
-      (doc) =>
-        (doc.category && doc.category.toLowerCase().includes(lowerSearchTerm)) ||
-        (doc.description && doc.description.toLowerCase().includes(lowerSearchTerm))
-    );
-
-    // ค้นหาในเอกสารใบลา
-    const filteredLeaves = hrdocument.filter(
-      (doc) =>
-        (doc.category && doc.category.toLowerCase().includes(lowerSearchTerm)) ||
-        (doc.reason && doc.reason.toLowerCase().includes(lowerSearchTerm))
-    );
-
-    // อัปเดต UI ทันที
-    setFilteredDocuments(filteredUploads);
-    sethrdocunet(filteredLeaves);
+    if (activeTab === "leave") {
+      // ค้นหาเฉพาะในเอกสารใบลา
+      const filteredLeaves = hrdocument.filter(
+        (doc) =>
+          (doc.category && doc.category.toLowerCase().includes(lowerSearchTerm)) ||
+          (doc.reason && doc.reason.toLowerCase().includes(lowerSearchTerm))
+      );
+      sethrdocunet(filteredLeaves);
+    } else {
+      // ค้นหาเฉพาะในเอกสารอัปโหลด
+      const filteredUploads = documents.filter(
+        (doc) =>
+          (doc.category && doc.category.toLowerCase().includes(lowerSearchTerm)) ||
+          (doc.description && doc.description.toLowerCase().includes(lowerSearchTerm))
+      );
+      setFilteredDocuments(filteredUploads);
+    }
   };
+
+  // ✅ รีเซ็ตค่า hrdocument ทุกครั้งที่เปลี่ยนแท็บ
+  useEffect(() => {
+    if (activeTab === "leave") {
+      sethrdocunet([...hrdocument]); // ใช้ spread operator เพื่อให้ React อัปเดต UI
+    }
+  }, [activeTab]); // เรียกเมื่อเปลี่ยนแท็บ
+
 
   const handleDeleteDocument = async () => {
     if (!deleteDocumentId || !deleteType) return;
@@ -739,38 +766,43 @@ function Document() {
         {activeTab === 'leave' && (
           <div className="bg-base-100 p-6 rounded-lg shadow-lg font-FontNoto">
             <h3 className="text-xl font-bold text-black mb-4 font-FontNoto">เอกสารใบลา</h3>
-            <ul className="space-y-4 font-FontNoto">
-              {hrdocument.map((doc) => (
-                <li key={doc.documentId} className="p-4 bg-white rounded-lg shadow flex justify-between items-center">
-                  <div>
-                    <h4 className="text-lg font-bold font-FontNoto">{doc.reason || "ใบลา"}</h4>
-                    <p className="text-sm text-gray-600 font-FontNoto">
-                      หมวดหมู่เอกสาร: <span className="font-FontNoto">{categoryMappingg[doc.leaveTypeId.toUpperCase()] || "ไม่ระบุหมวดหมู่"}</span>
-                    </p>
-                    <p className="text-sm text-gray-600 font-FontNoto">
-                      วันที่อัปโหลด: <span className="font-FontNoto">{doc.hrApprovedDate || "จาก HR"}</span>
-                    </p>
-                    <p className="text-sm text-gray-600 font-FontNoto">
-                      นามสกุลไฟล์: <span className="font-FontNoto">pdf</span>
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="btn btn-outline btn-info flex items-center gap-2 font-FontNoto hover:bg-blue-500 hover:text-white transition-all"
-                      onClick={() => handleOpenModal(doc)}
-                    >
-                      ดูไฟล์
-                    </button>
-                    <button
-                      className="btn btn-outline btn-error font-FontNoto"
-                      onClick={() => handleOpenDeleteModal(doc.documentId, "leave")}
-                    >
-                      ลบ
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+
+            {hrdocument.length > 0 ? (
+              <ul className="space-y-4 font-FontNoto">
+                {hrdocument.map((doc) => (
+                  <li key={doc.documentId} className="p-4 bg-white rounded-lg shadow flex justify-between items-center">
+                    <div>
+                      <h4 className="text-lg font-bold font-FontNoto">{doc.reason || "ใบลา"}</h4>
+                      <p className="text-sm text-gray-600 font-FontNoto">
+                        หมวดหมู่เอกสาร: <span className="font-FontNoto">{categoryMappingg[doc.leaveTypeId?.toUpperCase()] || "ไม่ระบุหมวดหมู่"}</span>
+                      </p>
+                      <p className="text-sm text-gray-600 font-FontNoto">
+                        วันที่อัปโหลด: <span className="font-FontNoto">{doc.hrApprovedDate ? new Date(doc.hrApprovedDate).toLocaleDateString('th-TH') : "จาก HR"}</span>
+                      </p>
+                      <p className="text-sm text-gray-600 font-FontNoto">
+                        นามสกุลไฟล์: <span className="font-FontNoto">pdf</span>
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="btn btn-outline btn-info flex items-center gap-2 font-FontNoto hover:bg-blue-500 hover:text-white transition-all"
+                        onClick={() => handleOpenModal(doc)}
+                      >
+                        ดูไฟล์
+                      </button>
+                      <button
+                        className="btn btn-outline btn-error font-FontNoto"
+                        onClick={() => handleOpenDeleteModal(doc.documentId, "leave")}
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500 text-center mt-4 font-FontNoto">ไม่มีเอกสารใบลา</p>
+            )}
           </div>
         )}
 
@@ -788,7 +820,9 @@ function Document() {
                     <div>
                       <h4 className="text-lg font-bold font-FontNoto">{doc.description || "เอกสาร"}</h4>
                       <p className="text-sm text-gray-600 font-FontNoto">หมวดหมู่เอกสาร: {categoryMapping[fileCategory]}</p>
-                      <p className="text-sm text-gray-600 font-FontNoto">วันที่อัปโหลด: {uploadDate}</p>
+                      <p className="text-sm text-gray-600 font-FontNoto">
+                        วันที่อัปโหลด: {uploadDate ? new Date(uploadDate).toLocaleDateString('th-TH') : ""}
+                      </p>
                       <p className="text-sm text-gray-600 font-FontNoto">นามสกุลไฟล์: {fileExtension}</p>
                     </div>
                     <div className="flex gap-2">

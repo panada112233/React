@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { NavLink } from 'react-router-dom';
 import axios from "axios";
 import { GetUser } from '../function/apiservice';
+import logo from "../assets/1.png";
 
 
 const sexLabels = {
@@ -65,11 +66,11 @@ const UserDetails = () => {
       try {
         // ดึงข้อมูลผู้ใช้งาน
         const userResponse = await axios.get(`https://localhost:7039/api/Admin/Users/${UserID}`);
-        setUser(userResponse.data );
-      
+        setUser(userResponse.data);
+
         const userdata = userResponse.data
-        
-                // ดึงข้อมูลการศึกษา
+
+        // ดึงข้อมูลการศึกษา
         const educationResponse = await axios.get("https://localhost:7039/api/Admin/Educations");
         const filteredEducations = educationResponse.data.filter(
           (education) => education.userID === parseInt(UserID, 10)
@@ -130,7 +131,7 @@ const UserDetails = () => {
   // ฟังก์ชันแก้ไขข้อมูลประสบการณ์ทำงาน
   const handleEdit = (exid) => {
     console.log(UserID)
-   navigate(`/work-experience/edit/${exid}/${UserID}`);
+    navigate(`/work-experience/edit/${exid}/${UserID}`);
   };
 
   // ฟังก์ชันลบข้อมูลการศึกษา
@@ -148,7 +149,7 @@ const UserDetails = () => {
           setModalEducationID(null); // ปิดโมเดล
         });
     }
-  }; 
+  };
 
   // ฟังก์ชันแก้ไขข้อมูลการศึกษา
   const handleEdit1 = (id) => {
@@ -257,11 +258,29 @@ const UserDetails = () => {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Navbar */}
-      <div className="navbar bg-amber-400 shadow-lg">
-        <div className="flex-1">
-          <div className="text-xl font-bold text-black bg-amber-400 p-4 rounded-md font-FontNoto">
-            ระบบจัดเก็บเอกสารพนักงาน
+      <div className="navbar bg-amber-400 shadow-lg flex justify-between items-center px-4 py-2">
+        <div className="flex items-center">
+          <div
+            className="flex items-center"
+            style={{
+              backgroundColor: "white",
+              border: "2px solid white",
+              borderRadius: "10px",
+              padding: "5px 10px",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            <img src={logo} className="h-8 w-auto mr-2" alt="Logo" />
+            <span style={{ color: "black", fontWeight: "bold" }}>THE </span>
+            &nbsp;
+            <span style={{ color: "#FF8800", fontWeight: "bold" }}>EXPERTISE </span>
+            &nbsp;
+            <span style={{ color: "black", fontWeight: "bold" }}>CO, LTD.</span>
           </div>
+        </div>
+        <div className="text-xl font-bold text-black bg-amber-400 p-4 rounded-md font-FontNoto">
+          ระบบจัดเก็บเอกสารพนักงาน
         </div>
       </div>
       <div className="flex min-h-screen bg-base-200">
@@ -396,7 +415,7 @@ const UserDetails = () => {
                   <td className="border px-4 py-2 font-FontNoto">{user.contact}</td>
                   <td className="border px-4 py-2 font-FontNoto">{roleMapping[user.role]}</td>
                   <td className="border px-4 py-2 font-FontNoto">{user.designation}</td>
-          
+
                   <td className="border px-4 py-2 font-FontNoto">{formatDateForDisplay(user.jDate)}</td>
                   <td className="border px-4 py-2 font-FontNoto">{sexLabels[user.gender] || "ไม่ระบุ"}</td>
                 </tr>
