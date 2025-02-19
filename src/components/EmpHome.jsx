@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 import axios from "axios";
-import DIcon from '../assets/12.png';
-// ลงทะเบียน Chart.js modules
+import { Icon } from "@iconify/react"; // ใช้ Icons8
+
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const roleMapping = {
@@ -42,6 +42,17 @@ const EmpHome = () => {
     "DAA14555-28E7-497E-B1D8-E0DA1F1BE283": "ใบลาคลอด",
     "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "ใบลาบวช",
   };
+
+  const iconMapping = {
+    "ใบลาป่วย": "https://img.icons8.com/ios-filled/50/survival-bag.png",
+    "ใบลากิจ": "https://img.icons8.com/ios-filled/50/leave-house.png",
+    "ใบลาพักร้อน": "https://img.icons8.com/ios-filled/50/beach.png",
+    "ใบลาคลอด": "https://img.icons8.com/glyph-neue/64/mothers-health.png",
+    "ใบลาบวช": "https://img.icons8.com/external-ddara-fill-ddara/64/external-monk-religion-buddha-Buddhist-meditation-Buddhism-goodness-avatar-ddara-fill-ddara.png",
+    "เอกสารส่วนตัว": "https://img.icons8.com/ios-filled/50/document.png",
+    "อื่นๆ": "https://img.icons8.com/ios-filled/50/briefcase.png",
+  };
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -138,14 +149,15 @@ const EmpHome = () => {
   ];
   // สร้าง array ของสีที่จะใช้ในกราฟ
   const colors = [
-    "#00E272", // สี
-    "#2CAFFE", // สี
-    "#FE6A35", // สี
-    "#FF66FF", // สี
-    "#FFCC33", // สี
-    "#663333", // สี
-    "#544FC5", // สี
+    "#66E2A0", // เขียวมิ้นต์สดขึ้น
+    "#66D1D1", // ฟ้าอมเขียวพาสเทลเข้ม
+    "#FFA07A", // ส้มอมชมพูสดใส
+    "#FF85A2", // ชมพูพาสเทลสดใส
+    "#FFD18C", // ครีมพีชอบอุ่น
+    "#B088F9", // ม่วงลาเวนเดอร์ชัดขึ้น
+    "#6FA3EF", // ฟ้าพาสเทลเข้ม
   ];
+
 
   // จัดลำดับข้อมูลตามลำดับที่กำหนดใน customOrder
   const sortedCategoryCounts = customOrder.map(category => ({
@@ -254,18 +266,15 @@ const EmpHome = () => {
         <div className="flex flex-wrap justify-center gap-6 mt-6">
           {/* แสดงข้อมูลประเภทเอกสาร */}
           {customOrder.map((category, index) => (
-            <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-40 flex">
-              <div className="flex flex-col items-center justify-center">
-                <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
-                <div className="flex items-center">
-                  <img
-                    src={DIcon} // หรือเปลี่ยนเป็นไอคอนที่เกี่ยวข้องกับประเภทเอกสาร
-                    className="w-8 h-8 mr-2"
-                  />
-                  <p className="text-3xl font-FontNoto">{categoryCounts[category] || 0}</p>
-                </div>
+            <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-40 flex flex-col">
+              <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
+              <div className="flex items-center space-x-2"> {/* ใช้ flex และเพิ่มระยะห่างระหว่างไอคอนกับตัวเลข */}
+                <img src={iconMapping[category]} alt={category} className="w-7 h-7" />
+
+                <p className="text-3xl font-FontNoto">{categoryCounts[category] || 0}</p>
               </div>
             </div>
+
           ))}
         </div>
       </div>

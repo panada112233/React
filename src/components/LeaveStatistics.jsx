@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import DIcon from '../assets/12.png';
+import { Icon } from "@iconify/react"; // ใช้ Icons8
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -38,6 +39,14 @@ const LeaveStatistics = () => {
     "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "ลาบวช",
   };
 
+  const iconMapping = {
+    "ลาป่วย": "https://img.icons8.com/ios-filled/50/survival-bag.png",
+    "ลากิจ": "https://img.icons8.com/ios-filled/50/leave-house.png",
+    "ลาพักร้อน": "https://img.icons8.com/ios-filled/50/beach.png",
+    "ลาคลอด": "https://img.icons8.com/glyph-neue/64/mothers-health.png",
+    "ลาบวช": "https://img.icons8.com/external-ddara-fill-ddara/64/external-monk-religion-buddha-Buddhist-meditation-Buddhism-goodness-avatar-ddara-fill-ddara.png",
+  };
+
   useEffect(() => {
     const fetchFileData = async () => {
       try {
@@ -71,49 +80,49 @@ const LeaveStatistics = () => {
             console.warn("⚠️ พบข้อมูลเอกสารที่ไม่มี userId:", doc);
             return;
           }
-  
+
           const docDate = new Date(doc.sentToHrdate);
           if (docDate.getMonth() === selectedMonth && docDate.getFullYear() === selectedYear) {
             const leaveTypeKey = doc.leaveTypeId?.trim().toUpperCase();
             console.log("🔍 ตรวจสอบ leaveTypeKey:", leaveTypeKey);
             console.log("🛠️ categoryMappingg:", categoryMappingg);
-  
+
             if (!categoryMappingg.hasOwnProperty(leaveTypeKey)) {
               console.warn("⚠️ ไม่มีค่าใน categoryMappingg สำหรับ leaveTypeKey:", leaveTypeKey);
               return;
             }
-  
+
             const leaveName = categoryMappingg[leaveTypeKey];
             console.log("📌 leaveName ที่ได้:", leaveName);
-  
+
             if (!leaveName) {
               console.warn("⚠️ ไม่พบประเภทใบลา:", leaveTypeKey);
               return;
             }
-  
+
             const userName = userMapping[doc.userId];
-  
+
             if (!userName || userName === "Unknown") {
               console.warn("⚠️ ข้ามข้อมูลของพนักงานที่ไม่รู้จัก:", doc);
               return;
             }
-  
+
             console.log("👤 userName:", userName);
-  
+
             if (!groupedData[userName]) {
               groupedData[userName] = {};
             }
-  
+
             if (!groupedData[userName].hasOwnProperty(leaveName)) {
               console.warn(`⚠️ ไม่พบประเภทใบลา '${leaveName}' ใน groupedData[${userName}]. กำหนดค่าเริ่มต้นเป็น 0`);
               groupedData[userName][leaveName] = 0;
             }
-  
+
             groupedData[userName][leaveName] += 1;
             categoryCountData[leaveName] = (categoryCountData[leaveName] || 0) + 1;
           }
         });
-  
+
         filesResponse.data
           .filter((file) => file.category !== "Others" && file.category !== "Doc")
           .forEach((file) => {
@@ -121,40 +130,40 @@ const LeaveStatistics = () => {
               console.warn("⚠️ พบไฟล์ที่ไม่มี userID:", file);
               return;
             }
-  
+
             const fileDate = new Date(file.uploadDate);
             if (fileDate.getMonth() === selectedMonth && fileDate.getFullYear() === selectedYear) {
               const userName = userMapping[file.userID];
-  
+
               if (!userName || userName === "Unknown") {
                 console.warn("⚠️ ข้ามเอกสารของพนักงานที่ไม่รู้จัก:", file);
                 return;
               }
-  
+
               const thaiCategory = categoryMapping[file.category];
-  
+
               if (thaiCategory) {
                 if (!groupedData[userName]) {
                   groupedData[userName] = {};
                 }
-  
+
                 groupedData[userName][thaiCategory] = (groupedData[userName][thaiCategory] || 0) + 1;
                 categoryCountData[thaiCategory] = (categoryCountData[thaiCategory] || 0) + 1;
               }
             }
           });
-  
+
         setEmployeeNames(Object.keys(groupedData).filter(name => name !== "Unknown"));
         setFileData(groupedData);
         setCategoryCounts(categoryCountData);
-  
+
         console.log("📌 รายชื่อพนักงานที่ได้หลังอัปเดต:", Object.keys(groupedData));
-  
+
       } catch (error) {
         console.error("❌ Error fetching file data:", error);
       }
     };
-  
+
     fetchFileData();
   }, [selectedMonth, selectedYear]);
 
@@ -165,12 +174,13 @@ const LeaveStatistics = () => {
     );
 
     const colors = [
-      "#4CAF50", // เขียวสดใส (ใบลาป่วย)
-      "#2196F3", // ฟ้าเข้ม (ใบลากิจ)
-      "#FF5722", // ส้มเข้ม (ใบลาพักร้อน)
-      "#E91E63", // ชมพูสด (ใบลาคลอด)
-      "#FFC107", // เหลืองสด (ใบลาบวช)
+      "#81C784", // เขียวพาสเทลสดใส (ใบลาป่วย)
+      "#64B5F6", // ฟ้าพาสเทล (ใบลากิจ)
+      "#FF8A65", // ส้มพาสเทลสด (ใบลาพักร้อน)
+      "#F48FB1", // ชมพูพาสเทลชัด (ใบลาคลอด)
+      "#FFD54F", // เหลืองพาสเทลสด (ใบลาบวช)
     ];
+    
 
     const datasets = [
       ...documentTypes.map((type, index) => ({
@@ -181,7 +191,7 @@ const LeaveStatistics = () => {
       {
         label: "รวมใบลา",
         data: totalDocuments,
-        backgroundColor: "#607D8B", // สีสำหรับข้อมูลรวม
+        backgroundColor: "#90A4AE", // สีสำหรับข้อมูลรวม
       },
     ];
 
@@ -287,21 +297,20 @@ const LeaveStatistics = () => {
 
           {/* ข้อมูลประเภทเอกสาร */}
           <div className="flex flex-wrap justify-center gap-6 mt-6">
-            {Object.keys(categoryCounts).map((category) => (
-              <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-40 flex">
-                <div className="flex flex-col items-center justify-center">
-                  <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
-                  <div className="flex items-center">
-                    <img
-                      src={DIcon}
-                      className="w-8 h-8 mr-2"
-                      alt="icon"
-                    />
-                    <p className="text-3xl font-FontNoto">{categoryCounts[category]}</p>
+            {Object.keys(categoryCounts).map((category) => {
+              return (
+                <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-40 flex">
+                  <div className="flex flex-col items-center justify-center">
+                    <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
+                    <div className="flex items-center space-x-2">
+                      <img src={iconMapping[category]} alt={category} className="w-7 h-7" />
+                      <p className="text-3xl font-FontNoto">{categoryCounts[category] || 0}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+
           </div>
 
           <div className="flex justify-center items-center mt-6">

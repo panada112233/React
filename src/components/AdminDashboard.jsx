@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
 import logo from "../assets/1.png";
-import DIcon from '../assets/12.png';
+import { Icon } from "@iconify/react"; // ใช้ Icons8
 import { GetUser } from '../function/apiservice'
 import {
   Chart as ChartJS,
@@ -62,6 +62,16 @@ const AdminDashboard = () => {
     "1799ABEB-158C-479E-A9DC-7D45E224E8ED": "ใบลากิจ",
     "DAA14555-28E7-497E-B1D8-E0DA1F1BE283": "ใบลาคลอด",
     "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "ใบลาบวช",
+  };
+
+  const iconMapping = {
+    "ใบลาป่วย": "https://img.icons8.com/ios-filled/50/survival-bag.png",
+    "ใบลากิจ": "https://img.icons8.com/ios-filled/50/leave-house.png",
+    "ใบลาพักร้อน": "https://img.icons8.com/ios-filled/50/beach.png",
+    "ใบลาคลอด": "https://img.icons8.com/glyph-neue/64/mothers-health.png",
+    "ใบลาบวช": "https://img.icons8.com/external-ddara-fill-ddara/64/external-monk-religion-buddha-Buddhist-meditation-Buddhism-goodness-avatar-ddara-fill-ddara.png",
+    "เอกสารส่วนตัว": "https://img.icons8.com/ios-filled/50/document.png",
+    "อื่นๆ": "https://img.icons8.com/ios-filled/50/briefcase.png",
   };
 
   const fectUserinfo = async () => {
@@ -375,13 +385,13 @@ const AdminDashboard = () => {
         label: category, // ✅ ชื่อประเภทเอกสาร
         data: categoryData[index], // ✅ จำนวนเอกสารในแต่ละเดือน
         backgroundColor: [
-          'rgba(0, 255, 0, 1)',
-          'rgba(0, 194, 233, 1)',
-          'rgba(255, 0, 0, 1)',
-          'rgba(255, 20, 147, 0.7)',
-          'rgba(255, 252, 0, 1)',
-          'rgba(152, 60, 0, 1)',
-          'rgba(145, 0, 203, 1)',
+          'rgba(102, 204, 153, 1)',  // Soft Green
+          'rgba(100, 181, 246, 1)',  // Soft Blue
+          'rgba(255, 138, 128, 1)',  // Soft Red
+          'rgba(240, 98, 146, 1)',   // Soft Pink
+          'rgba(255, 213, 79, 1)',   // Soft Yellow
+          'rgba(255, 167, 38, 1)',   // Soft Orange
+          'rgba(171, 71, 188, 1)',   // Soft Purple
         ][index],
       })),
       options: {
@@ -572,12 +582,10 @@ const AdminDashboard = () => {
               <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-40 flex">
                 <div className="flex flex-col items-center justify-center">
                   <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
-                  <div className="flex items-center">
-                    <img
-                      src={DIcon}
-                      className="w-8 h-8 mr-2"
-                    />
-                    <p className="text-3xl font-FontNoto">{categoryCounts[category]}</p>
+                  <div className="flex items-center space-x-2"> {/* ใช้ flex และเพิ่มระยะห่างระหว่างไอคอนกับตัวเลข */}
+                    <img src={iconMapping[category]} alt={category} className="w-7 h-7" />
+
+                    <p className="text-3xl font-FontNoto">{categoryCounts[category] || 0}</p>
                   </div>
                 </div>
               </div>
@@ -585,17 +593,6 @@ const AdminDashboard = () => {
           </div>
           {/* Chart Section */}
           <div className="flex justify-center gap-4 mt-6 flex-nowrap">
-            {/* Chart for Employee Growth */}
-            {/* <div
-              className="card bg-base-100 shadow-lg p-4 flex-grow"
-              style={{ border: '1px solid white', maxWidth: '42%' }}
-            >
-              <h3 className="text-lg font-bold text-black mb-4 font-FontNoto">
-                แนวโน้มการเพิ่มจำนวนพนักงาน
-              </h3>
-              <Bar data={createEmployeesChartData()} options={trendsChartOptions} />
-            </div> */}
-            {/* Chart for Document Growth */}
             <div
               className="card bg-base-100 shadow-lg p-4 flex-grow"
               style={{ border: '1px solid white', maxWidth: '60%' }}

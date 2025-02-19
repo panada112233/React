@@ -43,16 +43,16 @@ const ManagerView = () => {
         fetchRoles();
         fetchLeaveTypes();
         fetchDocumentByHRView();
-    
+
         // ✅ โหลดฟอร์มจาก Local Storage และให้ยังคงอยู่ถ้าส่งไป HR แล้ว
         const storedApprovedForms = JSON.parse(localStorage.getItem("approvedForms")) || [];
         const filteredApprovedForms = storedApprovedForms.filter(
             (form) => form.status === "manager_approved" || form.status === "pending_hr"
         );
-    
+
         setApprovedForms(filteredApprovedForms);
     }, []);
-    
+
 
     // ✅ โหลดเอกสารที่รอการอนุมัติจาก HR
     const fetchDocumentByHRView = async () => {
@@ -237,7 +237,6 @@ const ManagerView = () => {
         localStorage.setItem("hrForms", JSON.stringify(updatedHrForms));
     };
 
-
     // ฟังก์ชันปิด Modal
     const closeDeleteModal = () => {
         setSelectedFormToDelete(null);
@@ -273,7 +272,7 @@ const ManagerView = () => {
                 setModalState({
                     isOpen: true,
                     title: "✅ อนุมัติฟอร์มสำเร็จ!",
-                    message: "ฟอร์มใบลาอนุมัติเรียบร้อยแล้ว! แต่ยังไม่ส่งไป HR",
+                    message: "ฟอร์มใบลาอนุมัติเรียบร้อยแล้ว!",
                     type: "success",
                 });
 
@@ -329,13 +328,13 @@ const ManagerView = () => {
             });
             return;
         }
-    
+
         try {
             const response = await fetch(`https://localhost:7039/api/Document/SendToHR/${form.documentId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
             });
-    
+
             if (response.ok) {
                 setModalState({
                     isOpen: true,
@@ -343,7 +342,7 @@ const ManagerView = () => {
                     message: "HR จะเห็นฟอร์มนี้แล้ว",
                     type: "success",
                 });
-    
+
                 // ✅ เปลี่ยน `status` เป็น "pending_hr" แต่ยังค้างอยู่ใน `approvedForms`
                 setApprovedForms((prev) =>
                     prev.map((f) =>
@@ -352,7 +351,7 @@ const ManagerView = () => {
                             : f
                     )
                 );
-    
+
                 // ✅ บันทึกลง Local Storage เพื่อให้ค้างไว้
                 const updatedApprovedForms = JSON.parse(localStorage.getItem("approvedForms")) || [];
                 const newApprovedForms = updatedApprovedForms.map((f) =>
@@ -373,7 +372,7 @@ const ManagerView = () => {
             });
         }
     };
-    
+
 
     // ฟังก์ชันแก้ไขฟอร์ม
     const editApprovedForm = (form) => {
@@ -457,7 +456,7 @@ const ManagerView = () => {
                                             className="btn btn-sm btn-outline btn-info font-FontNoto mr-2"
                                             onClick={() => viewFormDetails(form)}
                                         >
-                                            👁️ ดูข้อมูล
+                                            👁️‍🗨️ ดูข้อมูล
                                         </button>
                                     </td>
                                 </tr>
@@ -647,8 +646,9 @@ const ManagerView = () => {
 
                                     {/* ✅ แสดงสถานะการส่ง */}
                                     <td className="font-FontNoto text-center" style={{ color: form.status === "pending_hr" ? 'green' : 'red' }}>
-                                        {form.status === "pending_hr" ? "📩 ส่งถึงแล้ว" : "ยังไม่ส่ง"}
+                                        {form.status === "pending_hr" ? "✅ ส่งถึงแล้ว" : "❌ ยังไม่ส่ง"}
                                     </td>
+
 
                                     {/* ✅ ปุ่มจัดการ */}
                                     <td className="flex flex-row gap-2 items-center text-center">
@@ -671,10 +671,15 @@ const ManagerView = () => {
                                                 </button>
 
                                                 <button
-                                                    className="btn btn-sm btn-outline btn-primary text-center"
+                                                    className="btn btn-sm btn-outline btn-primary text-center font-FontNoto"
                                                     onClick={() => sendToHR(form)}
                                                 >
-                                                    📩 ส่งให้ HR
+                                                    <img
+                                                        src="https://img.icons8.com/fluency/24/envelope-dots.png"
+                                                        alt="ส่งให้ HR"
+                                                        className="w-5 h-5"
+                                                    />
+                                                    ส่งให้ HR
                                                 </button>
                                             </>
                                         ) : (

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import { Link, NavLink } from "react-router-dom";
 import axios from "axios";
-import DIcon from '../assets/12.png';
+import { Icon } from "@iconify/react"; // ใช้ Icons8
 import logo from "../assets/1.png";
 import { GetUser } from '../function/apiservice'
 import {
@@ -46,6 +46,13 @@ const LeaveGraph = () => {
     "AE3C3A05-1FCB-4B8A-9044-67A83E781ED6": "ลาบวช",
   };
 
+  const iconMapping = {
+    "ลาป่วย": "https://img.icons8.com/ios-filled/50/survival-bag.png",
+    "ลากิจ": "https://img.icons8.com/ios-filled/50/leave-house.png",
+    "ลาพักร้อน": "https://img.icons8.com/ios-filled/50/beach.png",
+    "ลาคลอด": "https://img.icons8.com/glyph-neue/64/mothers-health.png",
+    "ลาบวช": "https://img.icons8.com/external-ddara-fill-ddara/64/external-monk-religion-buddha-Buddhist-meditation-Buddhism-goodness-avatar-ddara-fill-ddara.png",
+  };
 
   useEffect(() => {
     const fetchFileData = async () => {
@@ -174,13 +181,13 @@ const LeaveGraph = () => {
     );
 
     const colors = [
-      "#4CAF50", // เขียวสดใส (ใบลาป่วย)
-      "#2196F3", // ฟ้าเข้ม (ใบลากิจ)
-      "#FF5722", // ส้มเข้ม (ใบลาพักร้อน)
-      "#E91E63", // ชมพูสด (ใบลาคลอด)
-      "#FFC107", // เหลืองสด (ใบลาบวช)
+      "#81C784", // เขียวพาสเทลสดใส (ใบลาป่วย)
+      "#64B5F6", // ฟ้าพาสเทล (ใบลากิจ)
+      "#FF8A65", // ส้มพาสเทลสด (ใบลาพักร้อน)
+      "#F48FB1", // ชมพูพาสเทลชัด (ใบลาคลอด)
+      "#FFD54F", // เหลืองพาสเทลสด (ใบลาบวช)
     ];
-
+    
     const datasets = [
       ...documentTypes.map((type, index) => ({
         label: type,
@@ -190,7 +197,7 @@ const LeaveGraph = () => {
       {
         label: "รวมใบลา",
         data: totalDocuments,
-        backgroundColor: "#607D8B", // สีสำหรับข้อมูลรวม
+        backgroundColor: "#90A4AE", // สีสำหรับข้อมูลรวม
       },
     ];
 
@@ -525,13 +532,9 @@ const LeaveGraph = () => {
               <div key={category} className="bg-white border border-black p-4 rounded-lg shadow-md w-48 flex">
                 <div className="flex flex-col items-center justify-center">
                   <h3 className="text-lg font-bold font-FontNoto mb-2">{category}</h3>
-                  <div className="flex items-center">
-                    <img
-                      src={DIcon}
-                      className="w-8 h-8 mr-2"
-                      alt="icon"
-                    />
-                    <p className="text-3xl font-FontNoto">{categoryCounts[category]}</p>
+                  <div className="flex items-center space-x-2">
+                    <img src={iconMapping[category]} alt={category} className="w-7 h-7" />
+                    <p className="text-3xl font-FontNoto">{categoryCounts[category] || 0}</p>
                   </div>
                 </div>
               </div>

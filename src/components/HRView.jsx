@@ -158,8 +158,6 @@ const HRView = () => {
         alert("❌ ไม่สามารถเปิดเอกสารได้");
     };
 
-
-
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedDocument(null);
@@ -433,7 +431,6 @@ const HRView = () => {
         }
     };
     
-
     const fetchApprovedForms = async () => {
         try {
             const response = await fetch("https://localhost:7039/api/Document/GetApprovedFormsForHR");
@@ -713,7 +710,7 @@ const HRView = () => {
                                     <td className="font-FontNoto text-center">{form.hrSignature}</td>
 
                                     <td className="font-FontNoto text-center" style={{ color: sentForms[form.documentId] ? 'green' : 'red' }}>
-                                        {sentForms[form.documentId] ? "ส่งแล้ว" : "ยังไม่ส่ง"}
+                                        {sentForms[form.documentId] ? "✅ ส่งแล้ว" : "❌ ยังไม่ส่ง"}
                                     </td>
 
                                     <td className="font-FontNoto text-center flex space-x-2">
@@ -721,7 +718,7 @@ const HRView = () => {
                                             className="btn btn-sm btn-outline btn-info font-FontNoto"
                                             onClick={() => handleOpenModal(form)}
                                         >
-                                            ดูไฟล์
+                                            👁️‍🗨️ ดูไฟล์
                                         </button>
                                         {!sentForms[form.documentId] && (
                                             <button
