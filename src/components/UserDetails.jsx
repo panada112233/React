@@ -52,7 +52,7 @@ const UserDetails = () => {
   const [uploadMessage, setUploadMessage] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [error, setError] = useState(null);
-  const profileImageUrl = `https://localhost:7039/api/Files/GetProfileImage?userID=${UserID}`;
+  const profileImageUrl = `http://localhost:7039/api/Files/GetProfileImage?userID=${UserID}`;
   const navigate = useNavigate();
 
   // ดึงข้อมูลผู้ใช้งาน
@@ -65,20 +65,20 @@ const UserDetails = () => {
     const fetchData = async () => {
       try {
         // ดึงข้อมูลผู้ใช้งาน
-        const userResponse = await axios.get(`https://localhost:7039/api/Admin/Users/${UserID}`);
+        const userResponse = await axios.get(`http://localhost:7039/api/Admin/Users/${UserID}`);
         setUser(userResponse.data);
 
         const userdata = userResponse.data
 
         // ดึงข้อมูลการศึกษา
-        const educationResponse = await axios.get("https://localhost:7039/api/Admin/Educations");
+        const educationResponse = await axios.get("http://localhost:7039/api/Admin/Educations");
         const filteredEducations = educationResponse.data.filter(
           (education) => education.userID === parseInt(UserID, 10)
         );
         setEducations(filteredEducations);
 
         // ดึงข้อมูลประสบการณ์ทำงาน
-        const workResponse = await axios.get("https://localhost:7039/api/Admin/WorkExperiences");
+        const workResponse = await axios.get("http://localhost:7039/api/Admin/WorkExperiences");
         const filteredExperiences = workResponse.data.filter(
           (experience) => experience.userID === parseInt(UserID, 10)
         );
@@ -101,9 +101,10 @@ const UserDetails = () => {
         setAdminName(response.name || "ไม่มีชื่อแอดมิน");
         setProfilePic(
           response.profilePictureUrl
-            ? `http://localhost${response.profilePictureUrl}`
-            : "/uploads/admin/default-profile.jpg"
+            ? `http://localhost:7039${response.profilePictureUrl}`
+            : "http://localhost:7039/uploads/admin/default-profile.jpg"
         );
+
       } catch (error) {
         console.error("Error fetching admin data:", error);
         setAdminName("ไม่สามารถดึงข้อมูลได้");
@@ -116,7 +117,7 @@ const UserDetails = () => {
   const handleDelete = () => {
     if (modalExperienceID) {
       axios
-        .delete(`https://localhost:7039/api/Admin/WorkExperiences/${modalExperienceID}`)
+        .delete(`http://localhost:7039/api/Admin/WorkExperiences/${modalExperienceID}`)
         .then(() => {
           setWorkExperiences(workExperiences.filter((exp) => exp.experienceID !== modalExperienceID));
           setModalExperienceID(null); // ปิดโมเดล
@@ -138,7 +139,7 @@ const UserDetails = () => {
   const handleDelete1 = () => {
     if (modalEducationID) {
       axios
-        .delete(`https://localhost:7039/api/Admin/Educations/${modalEducationID}`)
+        .delete(`http://localhost:7039/api/Admin/Educations/${modalEducationID}`)
         .then(() => {
           setEducations(educations.filter((edu) => edu.educationID !== modalEducationID));
           setModalEducationID(null); // ปิดโมเดล
@@ -187,14 +188,17 @@ const UserDetails = () => {
     formData.append("id", objUser.userid);
     console.log(formData)
     try {
-      const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
+      const response = await axios.post("http://localhost:7039/api/Admin/UpdateAdminInfo", formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
 
       if (response.data && response.data.profilePictureUrl) {
-        const profilePictureUrl = `http://localhost/${response.data.profilePictureUrl}`;
+        const profilePictureUrl = response.data.profilePictureUrl
+        ? `http://localhost:7039${response.data.profilePictureUrl}`
+        : "http://localhost:7039/uploads/users/default-profile.jpg";
+
         setProfilePic(profilePictureUrl);
         setUploadMessage(
           <p className="font-FontNoto text-green-500">อัปโหลดสำเร็จ!</p>
@@ -238,7 +242,7 @@ const UserDetails = () => {
 
     try {
       const response = await axios.post(
-        "https://localhost:7039/api/Admin/UpdateAdminInfo",
+        "http://localhost:7039/api/Admin/UpdateAdminInfo",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -292,13 +296,17 @@ const UserDetails = () => {
             </div>
 
             <div className="flex flex-col items-center justify-center">
-              {profilePic && (
+              {profilePic ? (
                 <img
-                  src={profilePic}
+                  src={`${profilePic}?t=${new Date().getTime()}`} // ✅ ป้องกันการแคช
                   alt="Admin Profile"
                   className="rounded-full border-4 border-yellow-500 object-cover w-32 h-32"
+                  onError={(e) => { e.target.src = "http://localhost:7039/uploads/admin/default-profile.jpg"; }} // ✅ ถ้าโหลดรูปไม่ได้ ให้ใช้รูป default
                 />
+              ) : (
+                <p className="text-red-500 font-FontNoto"></p> // ✅ แสดงข้อความถ้าไม่มีรูป
               )}
+
               <p className="text-lg text-black font-FontNoto mt-4">
                 {adminName || "กำลังโหลด..."}
               </p>

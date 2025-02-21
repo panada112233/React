@@ -38,7 +38,7 @@ function ChangePassword() {
 
     try {
       const response = await axios.post(
-        "https://localhost:7039/api/Users/ChangePassword",
+        "http://localhost:7039/api/Users/ChangePassword",
         resetData,
         { headers: { "Content-Type": "application/json" } }
       );

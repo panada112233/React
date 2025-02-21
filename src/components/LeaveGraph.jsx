@@ -57,9 +57,9 @@ const LeaveGraph = () => {
   useEffect(() => {
     const fetchFileData = async () => {
       try {
-        const filesResponse = await axios.get("https://localhost:7039/api/Files");
-        const usersResponse = await axios.get("https://localhost:7039/api/Users");
-        const leaveResponse = await axios.get("https://localhost:7039/api/Document/GetAllCommitedDocuments");
+        const filesResponse = await axios.get("http://localhost:7039/api/Files");
+        const usersResponse = await axios.get("http://localhost:7039/api/Users");
+        const leaveResponse = await axios.get("http://localhost:7039/api/Document/GetAllCommitedDocuments");
 
 
         const userMapping = usersResponse.data.reduce((acc, user) => {
@@ -187,7 +187,7 @@ const LeaveGraph = () => {
       "#F48FB1", // ชมพูพาสเทลชัด (ใบลาคลอด)
       "#FFD54F", // เหลืองพาสเทลสด (ใบลาบวช)
     ];
-    
+
     const datasets = [
       ...documentTypes.map((type, index) => ({
         label: type,
@@ -263,9 +263,10 @@ const LeaveGraph = () => {
         setAdminName(response.name || "ไม่มีชื่อแอดมิน");
         setProfilePic(
           response.profilePictureUrl
-            ? `http://localhost${response.profilePictureUrl}`
-            : "/uploads/admin/default-profile.jpg"
+            ? `http://localhost:7039${response.profilePictureUrl}`
+            : "http://localhost:7039/uploads/admin/default-profile.jpg"
         );
+
       } catch (error) {
         console.error("Error fetching admin data:", error);
         setAdminName("ไม่สามารถดึงข้อมูลได้");
@@ -309,7 +310,7 @@ const LeaveGraph = () => {
 
     try {
       const response = await axios.post(
-        "https://localhost:7039/api/Admin/UpdateAdminInfo",
+        "http://localhost:7039/api/Admin/UpdateAdminInfo",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -341,14 +342,17 @@ const LeaveGraph = () => {
     formData.append("id", objUser.userid);
     console.log(formData)
     try {
-      const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
+      const response = await axios.post("http://localhost:7039/api/Admin/UpdateAdminInfo", formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
 
       if (response.data && response.data.profilePictureUrl) {
-        const profilePictureUrl = `http://localhost/${response.data.profilePictureUrl}`;
+        const profilePictureUrl = response.data.profilePictureUrl
+          ? `http://localhost:7039${response.data.profilePictureUrl}`
+          : "http://localhost:7039/uploads/users/default-profile.jpg";
+
         setProfilePic(profilePictureUrl);
         setUploadMessage(
           <p className="font-FontNoto text-green-500">อัปโหลดสำเร็จ!</p>
@@ -417,13 +421,17 @@ const LeaveGraph = () => {
             </div>
 
             <div className="flex flex-col items-center justify-center">
-              {profilePic && (
+              {profilePic ? (
                 <img
-                  src={profilePic}
+                  src={`${profilePic}?t=${new Date().getTime()}`} // ✅ ป้องกันการแคช
                   alt="Admin Profile"
                   className="rounded-full border-4 border-yellow-500 object-cover w-32 h-32"
+                  onError={(e) => { e.target.src = "http://localhost:7039/uploads/admin/default-profile.jpg"; }} // ✅ ถ้าโหลดรูปไม่ได้ ให้ใช้รูป default
                 />
+              ) : (
+                <p className="text-red-500 font-FontNoto"></p> // ✅ แสดงข้อความถ้าไม่มีรูป
               )}
+
               <p className="text-lg text-black font-FontNoto mt-4">
                 {adminName || "กำลังโหลด..."}
               </p>

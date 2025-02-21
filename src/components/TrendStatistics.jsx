@@ -69,8 +69,8 @@ const TrendStatistics = () => {
     useEffect(() => {
         const fetchDocuments = async () => {
             try {
-                const response = await axios.get("https://localhost:7039/api/Files");
-                const leaveResponse = await axios.get("https://localhost:7039/api/Document/GetAllCommitedDocuments");
+                const response = await axios.get("http://localhost:7039/api/Files");
+                const leaveResponse = await axios.get("http://localhost:7039/api/Document/GetAllCommitedDocuments");
 
                 // ✅ กรองข้อมูลเฉพาะปีที่เลือก
                 const filteredFiles = response.data.filter(doc =>
@@ -122,8 +122,8 @@ const TrendStatistics = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const employeeResponse = await axios.get("https://localhost:7039/api/Users");
-                const experienceResponse = await axios.get("https://localhost:7039/api/WorkExperiences");
+                const employeeResponse = await axios.get("http://localhost:7039/api/Users");
+                const experienceResponse = await axios.get("http://localhost:7039/api/WorkExperiences");
 
                 if (employeeResponse.status === 200) {
                     setEmployeeData(employeeResponse.data);

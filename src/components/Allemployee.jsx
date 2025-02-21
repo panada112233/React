@@ -36,7 +36,7 @@ const Allemployee = () => {
 
     useEffect(() => {
         axios
-            .get("https://localhost:7039/api/Admin/Users")
+            .get("http://localhost:7039/api/Admin/Users")
             .then((response) => {
                 if (Array.isArray(response.data)) {
                     setUsers(response.data);
@@ -121,7 +121,7 @@ const Allemployee = () => {
                                     <tbody>
                                         {(searchTerm ? filteredUsers : users).length > 0 ? (
                                             (searchTerm ? filteredUsers : users).map((user) => {
-                                                const profileImageUrl = `https://localhost:7039/api/Files/GetProfileImage?userID=${user.userID}`;
+                                                const profileImageUrl = `http://localhost:7039/api/Files/GetProfileImage?userID=${user.userID}`;
                                                 return (
                                                     <tr key={user.userID} className="hover:bg-gray-50">
                                                         <td className="border py-2 font-FontNoto">

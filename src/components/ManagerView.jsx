@@ -57,7 +57,7 @@ const ManagerView = () => {
     // ✅ โหลดเอกสารที่รอการอนุมัติจาก HR
     const fetchDocumentByHRView = async () => {
         try {
-            const response = await fetch("https://localhost:7039/api/Document/GetApprovedFormsForManager");
+            const response = await fetch("http://localhost:7039/api/Document/GetApprovedFormsForManager");
 
             if (response.ok) {
                 const apiData = await response.json();
@@ -97,7 +97,7 @@ const ManagerView = () => {
 
     const viewHRFormDetails = async (form) => {
         try {
-            const response = await fetch(`https://localhost:7039/api/Document/GetDocumentWithHistory/${form.documentId}`);
+            const response = await fetch(`http://localhost:7039/api/Document/GetDocumentWithHistory/${form.documentId}`);
             if (response.ok) {
                 const data = await response.json();
 
@@ -141,7 +141,7 @@ const ManagerView = () => {
 
     const fetchRoles = async () => {
         try {
-            const response = await fetch("https://localhost:7039/api/Document/GetRoles");
+            const response = await fetch("http://localhost:7039/api/Document/GetRoles");
             if (response.ok) {
                 const data = await response.json();
                 setRolesState(data);
@@ -151,7 +151,7 @@ const ManagerView = () => {
     };
     const fetchLeaveTypes = async () => {
         try {
-            const response = await fetch("https://localhost:7039/api/Document/GetLeaveTypes");
+            const response = await fetch("http://localhost:7039/api/Document/GetLeaveTypes");
             if (response.ok) {
                 const data = await response.json();
                 setLeavetpyeState(data);
@@ -165,7 +165,7 @@ const ManagerView = () => {
     // ✅ โหลดฟอร์มที่รอ GM อนุมัติจาก API
     const fetchPendingForms = async () => {
         try {
-            const response = await fetch("https://localhost:7039/api/Document/GetPendingFormsForManager");
+            const response = await fetch("http://localhost:7039/api/Document/GetPendingFormsForManager");
             if (response.ok) {
                 const data = await response.json();
                 console.log("📌 ข้อมูลที่ได้จาก API:", data); // ✅ ดูว่ามี historyRequset หรือไม่
@@ -192,7 +192,7 @@ const ManagerView = () => {
     // ✅ เปิดดูข้อมูลฟอร์ม และแก้ไขได้
     const viewFormDetails = async (form) => {
         try {
-            const response = await fetch(`https://localhost:7039/api/Document/GetDocumentWithHistory/${form.documentId}`);
+            const response = await fetch(`http://localhost:7039/api/Document/GetDocumentWithHistory/${form.documentId}`);
             if (response.ok) {
                 const data = await response.json();
                 console.log("📌 ข้อมูลจาก API:", data);
@@ -262,7 +262,7 @@ const ManagerView = () => {
         };
 
         try {
-            const response = await fetch("https://localhost:7039/api/Document/ApproveByManager", {
+            const response = await fetch("http://localhost:7039/api/Document/ApproveByManager", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(approvalData),
@@ -330,7 +330,7 @@ const ManagerView = () => {
         }
 
         try {
-            const response = await fetch(`https://localhost:7039/api/Document/SendToHR/${form.documentId}`, {
+            const response = await fetch(`http://localhost:7039/api/Document/SendToHR/${form.documentId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
             });
@@ -386,7 +386,7 @@ const ManagerView = () => {
         if (!selectedFormForEdit) return;
 
         try {
-            const response = await fetch("https://localhost:7039/api/Document/UpdateApprovedForm", {
+            const response = await fetch("http://localhost:7039/api/Document/UpdateApprovedForm", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

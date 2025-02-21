@@ -35,7 +35,7 @@ function MyEducation() {
     }
     try {
       const response = await axios.get(
-        `https://localhost:7039/api/Educations/GetById/${userID}`
+        `http://localhost:7039/api/Educations/GetById/${userID}`
       );
       if (response.status === 200) {
         setEducations(response.data);
@@ -98,7 +98,7 @@ function MyEducation() {
       if (isEditing) {
         const updatedEducation = { ...educations[editIndex], ...newEducation };
         const response = await axios.put(
-          `https://localhost:7039/api/Educations/Update/${updatedEducation.educationID}`,
+          `http://localhost:7039/api/Educations/Update/${updatedEducation.educationID}`,
           updatedEducation
         );
         const updatedEducations = educations.map((edu, index) =>
@@ -110,7 +110,7 @@ function MyEducation() {
         fetchEducations();
       } else {
         const response = await axios.post(
-          "https://localhost:7039/api/Educations/Insert",
+          "http://localhost:7039/api/Educations/Insert",
           { ...newEducation, userID }
         );
 
@@ -176,7 +176,7 @@ function MyEducation() {
       try {
         // เรียก API เพื่อลบข้อมูล
         await axios.delete(
-          `https://localhost:7039/api/Educations/Delete/${educationToDelete.educationID}`
+          `http://localhost:7039/api/Educations/Delete/${educationToDelete.educationID}`
         );
 
         // อัปเดตรายการการศึกษาหลังจากลบสำเร็จ

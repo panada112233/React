@@ -21,9 +21,9 @@ function ChangeProfilePicture() {
   useEffect(() => {
     const fetchProfileImage = async () => {
       try {
-        const response = await axios.get(`https://localhost:7039/api/Files/GetProfileImage?userID=${userID}`);
+        const response = await axios.get(`http://localhost:7039/api/Files/GetProfileImage?userID=${userID}`);
         if (response.status === 200 ) {
-          const fullImageUrl = `https://localhost:7039/api/Files/GetProfileImage?userID=${userID}`;
+          const fullImageUrl = `http://localhost:7039/api/Files/GetProfileImage?userID=${userID}`;
           setCurrentProfileImage(fullImageUrl);
         } else {
           setMessages([{ tags: "error", text: "ไม่พบรูปโปรไฟล์ปัจจุบัน" }]);
@@ -56,13 +56,13 @@ function ChangeProfilePicture() {
     formData.append("file", profilePicture);
 
     try {
-      const response = await axios.post(`https://localhost:7039/api/Files/UploadProfile?userID=${userID}`, formData, {
+      const response = await axios.post(`http://localhost:7039/api/Files/UploadProfile?userID=${userID}`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
       if (response.status === 200) {
         setMessages([{ tags: "success", text: "อัปโหลดรูปโปรไฟล์สำเร็จ!" }]);
-        setCurrentProfileImage(`https://localhost:7039${response.data.filePath}`);
+        setCurrentProfileImage(`http://localhost:7039${response.data.filePath}`);
         setProfilePicture(null);
       }
     } catch (error) {

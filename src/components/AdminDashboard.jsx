@@ -74,33 +74,12 @@ const AdminDashboard = () => {
     "อื่นๆ": "https://img.icons8.com/ios-filled/50/briefcase.png",
   };
 
-  const fectUserinfo = async () => {
-    try {
-      const responseUser = await GetUser();
-      console.log("Response from GetUser:", responseUser);
-
-      if (!responseUser || !responseUser.userid) {
-        throw new Error("User ID not found in response");
-      }
-
-      setuserinfoState(responseUser.userid); // ตั้งค่า userinfostate
-      setAdminName(responseUser.name || "ไม่มีชื่อแอดมิน");
-      setProfilePic(
-        responseUser.profilePictureUrl
-          ? `http://localhost${responseUser.profilePictureUrl}`
-          : "/uploads/admin/default-profile.jpg"
-      );
-    } catch (e) {
-      console.error("Error fetching user info:", e);
-    }
-  };
-
 
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
-        const response = await axios.get("https://localhost:7039/api/Files");
-        const leaveResponse = await axios.get("https://localhost:7039/api/Document/GetAllCommitedDocuments");
+        const response = await axios.get("http://localhost:7039/api/Files");
+        const leaveResponse = await axios.get("http://localhost:7039/api/Document/GetAllCommitedDocuments");
 
         // ✅ กรองข้อมูลเฉพาะปีที่เลือก
         const filteredFiles = response.data.filter(doc =>
@@ -153,7 +132,7 @@ const AdminDashboard = () => {
     const fetchUserInfo = async () => {
       try {
         const responseUser = await GetUser();
-        console.log("Response from GetUser:", responseUser);
+        console.log("📸 Response from GetUser:", responseUser);
 
         if (!responseUser || !responseUser.userid) {
           throw new Error("User ID not found in response");
@@ -163,13 +142,15 @@ const AdminDashboard = () => {
         setAdminName(responseUser.name || "ไม่มีชื่อแอดมิน");
         setProfilePic(
           responseUser.profilePictureUrl
-            ? `http://localhost${responseUser.profilePictureUrl}`
-            : "/uploads/admin/default-profile.jpg"
+            ? `http://localhost:7039${responseUser.profilePictureUrl}`
+            : "http://localhost:7039/uploads/admin/default-profile.jpg"
         );
+
       } catch (e) {
-        console.error("Error fetching user info:", e);
+        console.error("❌ Error fetching user info:", e);
       }
     };
+
 
     fetchUserInfo();
   }, []); // ✅ ทำงานแค่ครั้งเดียว
@@ -178,8 +159,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const employeeResponse = await axios.get("https://localhost:7039/api/Users");
-        const experienceResponse = await axios.get("https://localhost:7039/api/WorkExperiences");
+        const employeeResponse = await axios.get("http://localhost:7039/api/Users");
+        const experienceResponse = await axios.get("http://localhost:7039/api/WorkExperiences");
 
         if (employeeResponse.status === 200) {
           setEmployeeData(employeeResponse.data);
@@ -226,7 +207,7 @@ const AdminDashboard = () => {
 
     try {
       const response = await axios.post(
-        "https://localhost:7039/api/Admin/UpdateAdminInfo",
+        "http://localhost:7039/api/Admin/UpdateAdminInfo",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -257,14 +238,16 @@ const AdminDashboard = () => {
     formData.append("id", objUser.userid);
     console.log(formData)
     try {
-      const response = await axios.post("https://localhost:7039/api/Admin/UpdateAdminInfo", formData,
+      const response = await axios.post("http://localhost:7039/api/Admin/UpdateAdminInfo", formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
 
       if (response.data && response.data.profilePictureUrl) {
-        const profilePictureUrl = `http://localhost/${response.data.profilePictureUrl}`;
+        const profilePictureUrl = response.data.profilePictureUrl
+          ? `http://localhost:7039${response.data.profilePictureUrl}`
+          : "http://localhost:7039/uploads/users/default-profile.jpg";
         setProfilePic(profilePictureUrl);
         setUploadMessage(
           <p className="font-FontNoto text-green-500">อัปโหลดสำเร็จ!</p>
@@ -465,13 +448,22 @@ const AdminDashboard = () => {
             </div>
 
             <div className="flex flex-col items-center justify-center">
-              {profilePic && (
+              {profilePic ? (
                 <img
-                  src={profilePic}
+                  src={`${profilePic}?t=${new Date().getTime()}`}
                   alt="Admin Profile"
                   className="rounded-full border-4 border-yellow-500 object-cover w-32 h-32"
+                  onError={(e) => {
+                    console.error("❌ โหลดรูปโปรไฟล์ไม่สำเร็จ:", e.target.src);
+                    e.target.onerror = null; // ป้องกัน Loop Error
+                    e.target.src = "http://localhost:7039/uploads/admin/default-profile.jpg";
+                  }}
                 />
+
+              ) : (
+                <p className="text-red-500 font-FontNoto"></p> // ✅ แสดงข้อความถ้าไม่มีรูป
               )}
+
               <p className="text-lg text-black font-FontNoto mt-4">
                 {adminName || "กำลังโหลด..."}
               </p>
@@ -610,5 +602,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-

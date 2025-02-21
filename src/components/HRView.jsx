@@ -46,12 +46,12 @@ const HRView = () => {
         fetchLeaveType()
     }, []);
     const fetchRole = async () => {
-        const roleRes = await axios.get(`https://localhost:7039/api/Users/GetRoles`);
+        const roleRes = await axios.get(`http://localhost:7039/api/Users/GetRoles`);
 
         setRolesState(roleRes.data)
     }
     const fetchLeaveType = async () => {
-        const res = await axios.get(`https://localhost:7039/api/Document/GetLeaveTypes`);
+        const res = await axios.get(`http://localhost:7039/api/Document/GetLeaveTypes`);
 
         setleaveTypesState(res.data)
     }
@@ -72,7 +72,7 @@ const HRView = () => {
         };
 
         try {
-            const response = await fetch("https://localhost:7039/api/Document/ApproveByHR", {
+            const response = await fetch("http://localhost:7039/api/Document/ApproveByHR", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(approvalData),
@@ -129,13 +129,13 @@ const HRView = () => {
 
         if (typeof filePathOrDoc === 'string') {
             // ✅ เปิดไฟล์ PDF โดยตรง
-            window.open(`https://localhost:7039${filePathOrDoc}`, '_blank');
+            window.open(`http://localhost:7039${filePathOrDoc}`, '_blank');
             return;
         }
 
         if (filePathOrDoc?.filePath) {
             // ✅ เปิดไฟล์ที่ถูกอัปโหลด
-            window.open(`https://localhost:7039${filePathOrDoc.filePath}`, '_blank');
+            window.open(`http://localhost:7039${filePathOrDoc.filePath}`, '_blank');
             return;
         }
 
@@ -398,7 +398,7 @@ const HRView = () => {
     }
     const fetchHistory = async (documentid) => {
         try {
-            const res = await axios.get(`https://localhost:7039/api/Document/GetDocumentWithHistory/${documentid}`);
+            const res = await axios.get(`http://localhost:7039/api/Document/GetDocumentWithHistory/${documentid}`);
             console.log("📌 ข้อมูลที่ได้จาก API fetchHistory:", res.data.historyleave);
 
             const historyRes = res.data.historyleave;
@@ -412,15 +412,15 @@ const HRView = () => {
     };
     const fetchHRForms = async () => {
         try {
-            const response = await fetch("https://localhost:7039/api/Document/GetPendingFormsForHR");
-    
+            const response = await fetch("http://localhost:7039/api/Document/GetPendingFormsForHR");
+
             if (response.ok) {
                 const data = await response.json();
                 console.log("📌 ข้อมูลจาก API:", data);
-    
+
                 // ✅ กรองเฉพาะฟอร์มที่ GM อนุมัติแล้ว แต่ HR ยังไม่ได้อนุมัติ
                 const filteredForms = data.filter((form) => form.status === "pending_hr");
-    
+
                 setHrForms(filteredForms);
             } else {
                 console.warn("❌ ไม่พบฟอร์มที่ต้องอนุมัติ");
@@ -430,46 +430,54 @@ const HRView = () => {
             console.error("❌ Error fetching HR pending forms:", error);
         }
     };
-    
+
     const fetchApprovedForms = async () => {
         try {
-            const response = await fetch("https://localhost:7039/api/Document/GetApprovedFormsForHR");
+            const response = await fetch("http://localhost:7039/api/Document/GetApprovedFormsForHR");
 
             if (response.ok) {
                 const apiData = await response.json();
 
                 if (apiData.length === 0) {
                     console.warn("❌ API ไม่ส่งข้อมูลกลับมา, ใช้ข้อมูลจาก Local Storage");
-                    // ✅ ใช้ข้อมูลที่บันทึกไว้ก่อนหน้าแทน
                     const storedHrApprovedForms = JSON.parse(localStorage.getItem("hrApprovedForms")) || [];
                     setHrApprovedForms(storedHrApprovedForms);
                     return;
                 }
 
-                // ✅ รวมข้อมูลจาก API + Local Storage ป้องกันค่าหาย
+                // ✅ ดึงข้อมูลที่เก็บไว้จาก Local Storage
                 const storedHrApprovedForms = JSON.parse(localStorage.getItem("hrApprovedForms")) || [];
-                const mergedForms = [...storedHrApprovedForms, ...apiData].reduce((acc, form) => {
-                    acc[form.documentId] = form; // ใช้ documentId เป็น key ป้องกันค่าซ้ำ
-                    return acc;
-                }, {});
 
-                const finalForms = Object.values(mergedForms);
+                // ✅ อัปเดตข้อมูลเก่าด้วยข้อมูลใหม่จาก API โดยไม่ให้ค่าซ้ำ
+                const updatedForms = storedHrApprovedForms.map(storedForm => {
+                    const updatedForm = apiData.find(apiForm => apiForm.documentId === storedForm.documentId);
+                    return updatedForm ? updatedForm : storedForm;
+                });
+
+                // ✅ รวมข้อมูลใหม่จาก API ที่ไม่มีใน Local Storage
+                const newForms = apiData.filter(apiForm =>
+                    !storedHrApprovedForms.some(storedForm => storedForm.documentId === apiForm.documentId)
+                );
+
+                // ✅ รวมข้อมูลทั้งหมด
+                const finalForms = [...updatedForms, ...newForms];
+
+                // ✅ อัปเดต UI และเก็บข้อมูลลง Local Storage
                 setHrApprovedForms(finalForms);
-                localStorage.setItem("hrApprovedForms", JSON.stringify(finalForms)); // ✅ บันทึกลง Local Storage
+                localStorage.setItem("hrApprovedForms", JSON.stringify(finalForms));
+
+                console.log("✅ โหลดข้อมูลสำเร็จ:", finalForms);
             } else {
                 console.error("❌ API Error:", response.status);
-                // ✅ ถ้า API มีปัญหา ใช้ข้อมูลจาก Local Storage
                 const storedHrApprovedForms = JSON.parse(localStorage.getItem("hrApprovedForms")) || [];
                 setHrApprovedForms(storedHrApprovedForms);
             }
         } catch (error) {
             console.error("❌ Error fetching approved HR forms:", error);
-            // ✅ ถ้ามีข้อผิดพลาด ใช้ข้อมูลจาก Local Storage
             const storedHrApprovedForms = JSON.parse(localStorage.getItem("hrApprovedForms")) || [];
             setHrApprovedForms(storedHrApprovedForms);
         }
     };
-
 
     const handleEditHRSignature = async () => {
         if (!selectedFormForEdit || !selectedFormForEdit.documentId) {
@@ -488,17 +496,30 @@ const HRView = () => {
         };
 
         try {
-            const response = await fetch("https://localhost:7039/api/Document/EditHRSignature", {
+            console.log("📤 กำลังส่งข้อมูลไปยัง API:", updateData);
+
+            const response = await fetch("http://localhost:7039/api/Document/EditHRSignature", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updateData),
             });
 
             if (response.ok) {
+                console.log("✅ อัปเดตชื่อ HR สำเร็จ!");
 
-                // ✅ โหลดข้อมูลฟอร์มที่ HR อนุมัติแล้วอีกครั้ง
+                // ✅ โหลดข้อมูลใหม่จาก API
                 await fetchApprovedForms();
 
+                // ✅ อัปเดต UI โดยตรง (ป้องกัน delay)
+                setHrApprovedForms(prevForms =>
+                    prevForms.map(form =>
+                        form.documentId === selectedFormForEdit.documentId
+                            ? { ...form, hrSignature: selectedFormForEdit.hrSignature }
+                            : form
+                    )
+                );
+
+                // ✅ ล้างค่าฟอร์มที่กำลังแก้ไข
                 setSelectedFormForEdit(null);
             } else {
                 const errorText = await response.text();
@@ -510,6 +531,7 @@ const HRView = () => {
             alert("❌ เกิดข้อผิดพลาดในการอัปเดตชื่อ HR");
         }
     };
+
 
     // ฟังก์ชันแปลงวันที่เป็นรูปแบบ "DD/MM/YYYY"
     const formatDate = (dateStr) => {
@@ -523,7 +545,7 @@ const HRView = () => {
     };
     const handleSendToEmployee = async (form) => {
         try {
-            const response = await fetch("https://localhost:7039/api/Document/SendDocumentToEmployee", {
+            const response = await fetch("http://localhost:7039/api/Document/SendDocumentToEmployee", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

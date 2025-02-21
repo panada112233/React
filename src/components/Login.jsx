@@ -4,6 +4,7 @@ import axios from 'axios';
 import '../Admin_login.css';
 import '../Emp_login.css';
 import imgPath from '../assets/2.png';
+import { Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const Login = ({ setIsLoggedIn }) => {
@@ -18,33 +19,33 @@ const Login = ({ setIsLoggedIn }) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
-    
+
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
-    
+
         const url = isEmail
-            ? 'https://localhost:7039/api/Users/Login' // ใช้ API ของพนักงาน
-            : 'https://localhost:7039/api/Admin/login'; // ใช้ API ของแอดมิน
-    
+            ? "http://localhost:7039/api/Users/Login"   // ✅ ใช้ API ของพนักงาน
+            : "http://localhost:7039/api/Admin/login";  // ✅ ใช้ API ของแอดมิน
+
         const data = isEmail
             ? { email: identifier, passwordHash: password }
             : { username: identifier, password };
-    
+
         try {
             const response = await axios.post(url, data);
-    
+
             if (response.status === 200) {
-                const  res  = response.data;
+                const res = response.data;
                 console.log(response.data.userid)
                 if (res === null) {
                     setError('ไม่พบข้อมูล role ของพนักงาน');
                     return;
                 }
                 const userinfo = JSON.stringify(response.data)
-               
+
                 setIsLoggedIn(true);
                 localStorage.setItem('userinfo', JSON.stringify(response.data));
-              
-                sessionStorage.setItem('userId',response.data.userid );
+
+                sessionStorage.setItem('userId', response.data.userid);
                 if (isEmail) {
                     sessionStorage.setItem('role', response.data.role); // เก็บ role สำหรับพนักงานเท่านั้น
                 }
@@ -63,7 +64,7 @@ const Login = ({ setIsLoggedIn }) => {
             setIsLoading(false);
         }
     };
-    
+
 
     return (
         <div className="emp_login-container">
@@ -137,12 +138,9 @@ const Login = ({ setIsLoggedIn }) => {
                         </div>
                     </form>
                     <div className="mt-4 text-center">
-                        <a
-                            href="/ForgotPassword"
-                            className="text-sm text-yellow-500 hover:text-yellow-600 hover:underline font-FontNoto font-bold"
-                        >
+                        <Link to="/ForgotPassword" className="text-sm text-yellow-500 hover:text-yellow-600 hover:underline font-FontNoto font-bold">
                             ลืมรหัสผ่าน?
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>

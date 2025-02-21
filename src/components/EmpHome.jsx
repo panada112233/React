@@ -65,11 +65,11 @@ const EmpHome = () => {
         }
 
         // เรียก API สำหรับผู้ใช้คนเดียว
-        const userRequest = axios.get(`https://localhost:7039/api/Users/Getbyid/${id}`);
-        const documentsRequest = axios.get('https://localhost:7039/api/Files/Document', {
+        const userRequest = axios.get(`http://localhost:7039/api/Users/Getbyid/${id}`);
+        const documentsRequest = axios.get('http://localhost:7039/api/Files/Document', {
           params: { userID: id }
         });
-        const leaveDocumentsRequest = axios.get(`https://localhost:7039/api/Document/GetCommitedDocumentsByUser/${id}`)
+        const leaveDocumentsRequest = axios.get(`http://localhost:7039/api/Document/GetCommitedDocumentsByUser/${id}`)
           .catch((error) => {
             if (error.response?.status === 404) {
               console.warn("ไม่มีเอกสารใบลา (API คืน 404)");
@@ -78,8 +78,8 @@ const EmpHome = () => {
             throw error; // หากเป็นข้อผิดพลาดอื่นๆ ให้โยนออกไป
           });
 
-        const educationsRequest = axios.get(`https://localhost:7039/api/Educations/Getbyid/${id}`);
-        const experiencesRequest = axios.get(`https://localhost:7039/api/WorkExperiences/Getbyid/${id}`);
+        const educationsRequest = axios.get(`http://localhost:7039/api/Educations/Getbyid/${id}`);
+        const experiencesRequest = axios.get(`http://localhost:7039/api/WorkExperiences/Getbyid/${id}`);
         const [userResponse, documentsResponse, educationsResponse, experiencesResponse, leaveDocumentsResponse] = await Promise.all([
           userRequest,
           documentsRequest,

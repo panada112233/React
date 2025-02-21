@@ -36,7 +36,7 @@ function MyExperience() {
     }
     try {
       const response = await axios.get(
-        `https://localhost:7039/api/WorkExperiences/GetById/${userID}`
+        `http://localhost:7039/api/WorkExperiences/GetById/${userID}`
       );
       if (response.status === 200) {
         console.log("ข้อมูลที่ได้จาก API:", response.data);
@@ -71,7 +71,7 @@ function MyExperience() {
       if (isEditing) {
         const updatedExperience = { ...experiences[editIndex], ...newExperience };
         const response = await axios.put(
-          `https://localhost:7039/api/WorkExperiences/Update/${updatedExperience.experienceID}`,
+          `http://localhost:7039/api/WorkExperiences/Update/${updatedExperience.experienceID}`,
           updatedExperience
         );
         const updatedExperiences = experiences.map((exp, index) =>
@@ -94,7 +94,7 @@ function MyExperience() {
         const config = {
           method: "post",
           maxBodyLength: Infinity,
-          url: "https://localhost:7039/api/WorkExperiences/Insert",
+          url: "http://localhost:7039/api/WorkExperiences/Insert",
           headers: {
             "Content-Type": "application/json",
           },
@@ -174,7 +174,7 @@ function MyExperience() {
   const handleDeleteExperience = async (experience) => {
     try {
       await axios.delete(
-        `https://localhost:7039/api/WorkExperiences/Delete/${experience.experienceID}`
+        `http://localhost:7039/api/WorkExperiences/Delete/${experience.experienceID}`
       );
       const updatedExperiences = experiences.filter(
         (exp) => exp.experienceID !== experience.experienceID

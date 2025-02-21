@@ -82,7 +82,7 @@ const LeaveForm = () => {
     const fetchLeaveType = async () => {
 
         try {
-            const response = await fetch(`https://localhost:7039/api/Document/GetLeaveTypes`);
+            const response = await fetch(`http://localhost:7039/api/Document/GetLeaveTypes`);
             if (response.ok) {
                 const data = await response.json();
 
@@ -98,7 +98,7 @@ const LeaveForm = () => {
     const fetchRoles = async () => {
 
         try {
-            const response = await fetch(`https://localhost:7039/api/Document/GetRoles`);
+            const response = await fetch(`http://localhost:7039/api/Document/GetRoles`);
             if (response.ok) {
                 const data = await response.json();
                 setrolesState(data)
@@ -132,7 +132,7 @@ const LeaveForm = () => {
 
     const setFormViewData = async (form) => {
         try {
-            const response = await fetch(`https://localhost:7039/api/Document/GetDocumentById/${form.documentId}`);
+            const response = await fetch(`http://localhost:7039/api/Document/GetDocumentById/${form.documentId}`);
             if (response.ok) {
                 const data = await response.json();
                 console.log("📌 Data from API:", data); // ✅ เช็คค่าที่ได้จาก API
@@ -192,7 +192,7 @@ const LeaveForm = () => {
 
     const fetchSavedForms = async () => {
         try {
-            const response = await fetch(`https://localhost:7039/api/Document/GetDocumentsByUser/${userId}`);
+            const response = await fetch(`http://localhost:7039/api/Document/GetDocumentsByUser/${userId}`);
             if (response.ok) {
                 const data = await response.json();
                 console.log("📌 ข้อมูลฟอร์มที่โหลดจาก API:", data);
@@ -279,7 +279,7 @@ const LeaveForm = () => {
             }
         };
     
-        const url = `https://localhost:7039/api/Document/UpdateDocument/${updatedFormData.documentId}`;
+        const url = `http://localhost:7039/api/Document/UpdateDocument/${updatedFormData.documentId}`;
     
         axios.put(url, updatedFormData, {
             headers: {
@@ -318,7 +318,7 @@ const LeaveForm = () => {
                 await updateFrom();
             } else {
                 // ✅ ถ้าไม่มี documentId → บันทึกใหม่
-                url = "https://localhost:7039/api/Document/CreateDocument";
+                url = "http://localhost:7039/api/Document/CreateDocument";
                 method = "POST";
     
                 response = await fetch(url, {
@@ -399,7 +399,7 @@ const LeaveForm = () => {
         };
 
         try {
-            const response = await fetch("https://localhost:7039/api/Document/ApproveByManager", {
+            const response = await fetch("http://localhost:7039/api/Document/ApproveByManager", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(approvalData),
@@ -422,7 +422,7 @@ const LeaveForm = () => {
     const sendFrom = async (form) => {
         try {
             console.log("📌 กำลังส่งฟอร์ม:", form.documentId);
-            const url = `https://localhost:7039/api/Document/SendToManager/${form.documentId}`;
+            const url = `http://localhost:7039/api/Document/SendToManager/${form.documentId}`;
 
             const response = await fetch(url, {
                 method: "PATCH",
@@ -466,7 +466,7 @@ const LeaveForm = () => {
         }
 
         try {
-            const response = await fetch(`https://localhost:7039/api/Document/DeleteDocument/${itemToDelete}`, {
+            const response = await fetch(`http://localhost:7039/api/Document/DeleteDocument/${itemToDelete}`, {
                 method: "DELETE",
             });
 

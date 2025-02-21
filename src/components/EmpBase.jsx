@@ -46,19 +46,19 @@ const EmpBase = () => {
 
       // ดึงข้อมูลโปรไฟล์รูปภาพ
       const profileResponse = await axios.get(
-        `https://localhost:7039/api/Files/GetProfileImage?userID=${userID}`
+        `http://localhost:7039/api/Files/GetProfileImage?userID=${userID}`
       );
       setCurrentProfileImage(profileResponse)
 
       if (profileResponse.status === 200) {
-        const fullImageUrl = `https://localhost:7039/api/Files/GetProfileImage?userID=${userID}`;
+        const fullImageUrl = `http://localhost:7039/api/Files/GetProfileImage?userID=${userID}`;
 
         setCurrentProfileImage(fullImageUrl);
       }
 
       // ดึงข้อมูลผู้ใช้งาน
       const userResponse = await axios.get(
-        `https://localhost:7039/api/Users/Getbyid/${userID}`
+        `http://localhost:7039/api/Users/Getbyid/${userID}`
       );
       console.log(userResponse)
       if (userResponse.status === 200) {

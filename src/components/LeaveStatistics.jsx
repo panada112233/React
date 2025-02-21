@@ -50,9 +50,9 @@ const LeaveStatistics = () => {
   useEffect(() => {
     const fetchFileData = async () => {
       try {
-        const filesResponse = await axios.get("https://localhost:7039/api/Files");
-        const usersResponse = await axios.get("https://localhost:7039/api/Users");
-        const leaveResponse = await axios.get("https://localhost:7039/api/Document/GetAllCommitedDocuments");
+        const filesResponse = await axios.get("http://localhost:7039/api/Files");
+        const usersResponse = await axios.get("http://localhost:7039/api/Users");
+        const leaveResponse = await axios.get("http://localhost:7039/api/Document/GetAllCommitedDocuments");
 
         console.log("📌 จำนวนพนักงานที่ดึงมา:", usersResponse.data.length);
 

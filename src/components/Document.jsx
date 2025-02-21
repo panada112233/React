@@ -72,7 +72,7 @@ function Document() {
   // Fetch documents
   const fetchDocuments = async () => {
     try {
-      const response = await fetch(`https://localhost:7039/api/Files/Document?userID=${userID}`);
+      const response = await fetch(`http://localhost:7039/api/Files/Document?userID=${userID}`);
       const data = await response.json();
       setDocuments(data);
       setFilteredDocuments(data);
@@ -83,7 +83,7 @@ function Document() {
   };
   const fetchHistory = async (documentid) => {
     try {
-      const res = await axios.get(`https://localhost:7039/api/Document/GetDocumentWithHistory/${documentid}`);
+      const res = await axios.get(`http://localhost:7039/api/Document/GetDocumentWithHistory/${documentid}`);
       console.log("fetchHistory", res.data.historyleave)
 
       const historyRes = res.data.historyleave;
@@ -95,7 +95,7 @@ function Document() {
   }
   const fetchDocumentsFromHR = async () => {
     try {
-      const response = await fetch(`https://localhost:7039/api/Document/GetCommitedDocumentsByUser/${userID}`);
+      const response = await fetch(`http://localhost:7039/api/Document/GetCommitedDocumentsByUser/${userID}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -151,7 +151,7 @@ function Document() {
         const config = {
           method: 'post',
           maxBodyLength: Infinity,
-          url: 'https://localhost:7039/api/Files/VerifyPassword',
+          url: 'http://localhost:7039/api/Files/VerifyPassword',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -163,7 +163,7 @@ function Document() {
         if (response.data.isValid) {
           if (selectedFilePath) {
             // เปิดไฟล์เอกสารอัปโหลด
-            window.open('https://localhost:7039' + selectedFilePath, '_blank');
+            window.open('http://localhost:7039' + selectedFilePath, '_blank');
           } else if (selectedDocument) {
             // สร้าง PDF สำหรับเอกสารใบลา
             createPDF(selectedDocument);
@@ -194,7 +194,7 @@ function Document() {
     formData.append('UserID', userID);
 
     try {
-      const response = await fetch('https://localhost:7039/api/Files/Create', {
+      const response = await fetch('http://localhost:7039/api/Files/Create', {
         method: 'POST',
         body: formData,
       });
@@ -270,8 +270,8 @@ function Document() {
     if (!deleteDocumentId || !deleteType) return;
 
     let apiUrl = deleteType === "upload"
-      ? `https://localhost:7039/api/Files/${deleteDocumentId}` // ลบเอกสารที่อัปโหลด
-      : `https://localhost:7039/api/Document/DeleteDocument/${deleteDocumentId}`; // ลบเอกสารใบลา
+      ? `http://localhost:7039/api/Files/${deleteDocumentId}` // ลบเอกสารที่อัปโหลด
+      : `http://localhost:7039/api/Document/DeleteDocument/${deleteDocumentId}`; // ลบเอกสารใบลา
 
     try {
       const response = await fetch(apiUrl, { method: "DELETE" });
@@ -814,7 +814,7 @@ function Document() {
                 const fileExtension = doc.filePath ? doc.filePath.split('.').pop() : "ไม่พบข้อมูล";
                 const uploadDate = doc.uploadDate || "จาก HR";
                 const fileCategory = doc.category || "ไม่ระบุหมวดหมู่";
-                const fileUrl = doc.filePath ? `https://localhost:7039${doc.filePath}` : null;
+                const fileUrl = doc.filePath ? `http://localhost:7039${doc.filePath}` : null;
                 return (
                   <li key={doc.fileID || Math.random()} className="p-4 bg-white rounded-lg shadow flex justify-between items-center">
                     <div>
